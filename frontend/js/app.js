@@ -50,6 +50,7 @@ const DEFAULT_COLORS = [
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', () => {
+    initLanguageButtons();
     initDarkMode();
     initPWAInstall();
     initNavigation();
@@ -67,6 +68,43 @@ document.addEventListener('DOMContentLoaded', () => {
     checkCurrentVacation();
     requestNotificationPermission();
 });
+
+// ============ GESTION DE LA LANGUE ============
+
+function initLanguageButtons() {
+    const langFr = document.getElementById('lang-fr');
+    const langEn = document.getElementById('lang-en');
+
+    if (langFr) {
+        langFr.addEventListener('click', () => {
+            setLanguage('fr');
+            showToast('Langue changee en Francais');
+        });
+    }
+
+    if (langEn) {
+        langEn.addEventListener('click', () => {
+            setLanguage('en');
+            showToast('Language changed to English');
+        });
+    }
+
+    // Update UI on language change event
+    window.addEventListener('languageChanged', () => {
+        // Refresh dynamic content
+        updateMonthWidget();
+        loadRecentPresences();
+        if (typeof renderCalendar === 'function') {
+            renderCalendar();
+        }
+        if (typeof loadHistory === 'function') {
+            loadHistory();
+        }
+        if (typeof updateStats === 'function') {
+            updateStats();
+        }
+    });
+}
 
 // ============ GESTION DES COULEURS CLIENTS ============
 
