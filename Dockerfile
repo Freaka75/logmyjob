@@ -1,5 +1,5 @@
 # Dockerfile pour Log My Job PWA
-# Optimise pour Coolify
+# 100% localStorage - Pas de base de donnees serveur
 
 FROM python:3.11-slim
 
@@ -7,7 +7,6 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV FLASK_ENV=production
-ENV DATABASE_PATH=/app/data/presence.db
 
 # Installer les dependances systeme
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -20,9 +19,6 @@ WORKDIR /app
 # Copier et installer les dependances Python (cache layer)
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Creer le dossier data pour la base de donnees
-RUN mkdir -p /app/data
 
 # Copier le code backend
 COPY backend/ ./backend/

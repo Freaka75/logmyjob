@@ -1,8 +1,9 @@
-const CACHE_NAME = 'log-my-job-v28';
+const CACHE_NAME = 'log-my-job-v29';
 const urlsToCache = [
   '/',
   '/index.html',
   '/css/style.css',
+  '/js/storage.js',
   '/js/translations.js',
   '/js/app.js',
   '/js/calendar.js',

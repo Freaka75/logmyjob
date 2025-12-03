@@ -1,9 +1,5 @@
-// Configuration API - utilise des URLs relatives (meme serveur)
-// En production (Docker), Flask sert le frontend et l'API
-// En developpement, peut utiliser un serveur separe sur le port 5000
-const API_BASE = window.location.port === '5000' || window.location.port === ''
-    ? '/api'
-    : `http://${window.location.hostname}:5000/api`;
+// ============ APPLICATION LOG MY JOB ============
+// Stockage 100% localStorage - Fonctionne offline
 
 // État global
 let currentPage = 'home';
@@ -380,7 +376,7 @@ function hideForm() {
     currentEditId = null;
 }
 
-async function savePresence() {
+function savePresence() {
     const date = document.getElementById('date').value;
     const clientSelect = document.getElementById('client-select').value;
     const clientInput = document.getElementById('client-input').value;
@@ -389,81 +385,59 @@ async function savePresence() {
     const notes = document.getElementById('notes').value;
 
     if (!client) {
-        showToast('Veuillez sélectionner ou saisir un client', 'error');
+        showToast('Veuillez selectionner ou saisir un client', 'error');
         return;
     }
 
     const data = { date, client, duree, notes };
 
-    try {
-        let response;
-        if (currentEditId) {
-            response = await fetch(`${API_BASE}/days/${currentEditId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-        } else {
-            response = await fetch(`${API_BASE}/days`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-        }
+    let result;
+    if (currentEditId) {
+        result = updateDay(currentEditId, data);
+    } else {
+        result = saveDay(data);
+    }
 
-        const result = await response.json();
-
-        if (response.ok) {
-            showToast(currentEditId ? 'Jour mis à jour' : 'Jour enregistré', 'success');
-            hideForm();
-            await loadData();
-        } else {
-            showToast(result.error || 'Erreur lors de l\'enregistrement', 'error');
-        }
-    } catch (error) {
-        showToast('Erreur de connexion au serveur', 'error');
-        console.error(error);
+    if (result.success) {
+        showToast(currentEditId ? 'Jour mis a jour' : 'Jour enregistre', 'success');
+        hideForm();
+        loadData();
+    } else {
+        showToast(result.error || 'Erreur lors de l\'enregistrement', 'error');
     }
 }
 
-async function deletePresence(id) {
+function deletePresence(id) {
     if (!confirm('Supprimer ce jour ?')) return;
 
-    try {
-        const response = await fetch(`${API_BASE}/days/${id}`, {
-            method: 'DELETE'
-        });
+    const result = deleteDay(id);
 
-        if (response.ok) {
-            showToast('Jour supprimé', 'success');
-            await loadData();
-        } else {
-            showToast('Erreur lors de la suppression', 'error');
-        }
-    } catch (error) {
-        showToast('Erreur de connexion au serveur', 'error');
-        console.error(error);
+    if (result.success) {
+        showToast('Jour supprime', 'success');
+        loadData();
+    } else {
+        showToast('Erreur lors de la suppression', 'error');
     }
 }
 
-// Chargement des données
-async function loadData() {
-    try {
-        // Charger toutes les présences
-        const presencesResponse = await fetch(`${API_BASE}/days`);
-        const presencesData = await presencesResponse.json();
-        allPresences = presencesData.presences || [];
+// Chargement des données depuis localStorage
+function loadData() {
+    // Charger toutes les presences depuis localStorage
+    allPresences = getAllDays();
 
-        // Charger les clients
-        const clientsResponse = await fetch(`${API_BASE}/clients`);
-        const clientsData = await clientsResponse.json();
-        allClients = clientsData.clients || [];
+    // Trier par date decroissante
+    allPresences.sort((a, b) => b.date.localeCompare(a.date));
 
-        updateUI();
-    } catch (error) {
-        showToast('Erreur de chargement des données', 'error');
-        console.error(error);
+    // Charger les clients depuis localStorage
+    allClients = getAllClients();
+
+    // Si pas de clients, les synchroniser depuis les jours
+    if (allClients.length === 0 && allPresences.length > 0) {
+        syncClientsFromDays();
+        allClients = getAllClients();
     }
+
+    updateUI();
 }
 
 function updateUI() {
@@ -689,47 +663,43 @@ function renderPagination(totalPages) {
     }
 }
 
-// Stats
-async function loadStats() {
-    try {
-        const response = await fetch(`${API_BASE}/stats/monthly`);
-        const stats = await response.json();
+// Stats - Calculees depuis localStorage
+function loadStats() {
+    const stats = getMonthlyStats();
 
-        const container = document.getElementById('stats-container');
-        container.innerHTML = '';
+    const container = document.getElementById('stats-container');
+    if (!container) return;
 
-        if (Object.keys(stats).length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">Aucune donnée</p>';
-            return;
-        }
+    container.innerHTML = '';
 
-        Object.entries(stats).sort((a, b) => b[0].localeCompare(a[0])).forEach(([month, data]) => {
-            const div = document.createElement('div');
-            div.className = 'stats-month';
-
-            let clientsHTML = '';
-            Object.entries(data.clients).forEach(([client, days]) => {
-                clientsHTML += `
-                    <div class="stats-client-item">
-                        <span class="stats-client-name">${client}</span>
-                        <span class="stats-client-days">${days.toFixed(1)} jours</span>
-                    </div>
-                `;
-            });
-
-            div.innerHTML = `
-                <h3>
-                    <span>${formatMonth(month)}</span>
-                    <span class="stats-total">${data.total.toFixed(1)} jours</span>
-                </h3>
-                <div class="stats-clients">${clientsHTML}</div>
-            `;
-            container.appendChild(div);
-        });
-    } catch (error) {
-        showToast('Erreur de chargement des stats', 'error');
-        console.error(error);
+    if (Object.keys(stats).length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">Aucune donnee</p>';
+        return;
     }
+
+    Object.entries(stats).sort((a, b) => b[0].localeCompare(a[0])).forEach(([month, data]) => {
+        const div = document.createElement('div');
+        div.className = 'stats-month';
+
+        let clientsHTML = '';
+        Object.entries(data.clients).forEach(([client, days]) => {
+            clientsHTML += `
+                <div class="stats-client-item">
+                    <span class="stats-client-name">${client}</span>
+                    <span class="stats-client-days">${days.toFixed(1)} jours</span>
+                </div>
+            `;
+        });
+
+        div.innerHTML = `
+            <h3>
+                <span>${formatMonth(month)}</span>
+                <span class="stats-total">${data.total.toFixed(1)} jours</span>
+            </h3>
+            <div class="stats-clients">${clientsHTML}</div>
+        `;
+        container.appendChild(div);
+    });
 }
 
 // Export - Les fonctions d'export sont maintenant dans export.js
@@ -811,10 +781,8 @@ function initVacations() {
 }
 
 function loadVacations() {
-    const saved = localStorage.getItem('vacations');
-    if (saved) {
-        vacations = JSON.parse(saved);
-    }
+    // Utiliser storage.js pour charger les vacations
+    vacations = getAllVacations();
 }
 
 function saveVacationsToStorage() {
@@ -1250,34 +1218,14 @@ function initBackup() {
     }
 }
 
-async function backupData() {
+function backupData() {
     const status = document.getElementById('backup-status');
     status.className = 'backup-status info';
     status.textContent = 'Preparation de la sauvegarde...';
 
     try {
-        // Recuperer les presences depuis l'API
-        const response = await fetch(`${API_BASE}/backup`);
-        if (!response.ok) throw new Error('Erreur API');
-        const apiData = await response.json();
-
-        // Creer l'objet de sauvegarde complet
-        const backup = {
-            version: '1.0',
-            export_date: new Date().toISOString(),
-            app_name: 'Presence Tracker PWA',
-            data: {
-                // Donnees de la base
-                presences: apiData.presences,
-                // Donnees localStorage
-                settings: {
-                    vacations: JSON.parse(localStorage.getItem('vacations') || '[]'),
-                    notificationSettings: JSON.parse(localStorage.getItem('notificationSettings') || '{}'),
-                    assistantSettings: JSON.parse(localStorage.getItem('assistantSettings') || '{}'),
-                    clientColors: JSON.parse(localStorage.getItem('clientColors') || '{}')
-                }
-            }
-        };
+        // Exporter toutes les donnees depuis localStorage
+        const backup = exportAllData();
 
         // Telecharger le fichier
         const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
@@ -1285,12 +1233,13 @@ async function backupData() {
         const link = document.createElement('a');
         const dateStr = new Date().toISOString().split('T')[0];
         link.href = url;
-        link.download = `presence_tracker_backup_${dateStr}.json`;
+        link.download = `logmyjob_backup_${dateStr}.json`;
         link.click();
         URL.revokeObjectURL(url);
 
+        const daysCount = backup.data.days ? backup.data.days.length : 0;
         status.className = 'backup-status success';
-        status.textContent = `Sauvegarde reussie! ${apiData.presences.length} presences exportees.`;
+        status.textContent = `Sauvegarde reussie! ${daysCount} presences exportees.`;
 
     } catch (error) {
         console.error('Erreur sauvegarde:', error);
@@ -1308,17 +1257,30 @@ function handleRestoreFile(event) {
     status.textContent = 'Lecture du fichier...';
 
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = (e) => {
         try {
             const backup = JSON.parse(e.target.result);
 
-            // Validation du format
-            if (!backup.data || !backup.data.presences) {
+            // Validation du format (supporte v1 et v2)
+            const hasV2Data = backup.data && backup.data.days;
+            const hasV1Data = backup.data && backup.data.presences;
+            const hasLegacyData = backup.presences;
+
+            if (!hasV2Data && !hasV1Data && !hasLegacyData) {
                 throw new Error('Format de sauvegarde invalide');
             }
 
+            // Compter les presences selon le format
+            let presenceCount = 0;
+            if (hasV2Data) {
+                presenceCount = backup.data.days.length;
+            } else if (hasV1Data) {
+                presenceCount = backup.data.presences.length;
+            } else if (hasLegacyData) {
+                presenceCount = backup.presences.length;
+            }
+
             // Confirmation
-            const presenceCount = backup.data.presences.length;
             const confirmMsg = `Restaurer ${presenceCount} presences?\n\nAttention: Les donnees actuelles seront remplacees.`;
 
             if (!confirm(confirmMsg)) {
@@ -1330,48 +1292,52 @@ function handleRestoreFile(event) {
 
             status.textContent = 'Restauration en cours...';
 
-            // Restaurer les presences via API
-            const response = await fetch(`${API_BASE}/restore`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    presences: backup.data.presences,
-                    clear_existing: true
-                })
-            });
-
-            if (!response.ok) throw new Error('Erreur API restauration');
-
-            // Restaurer les parametres localStorage
-            if (backup.data.settings) {
-                if (backup.data.settings.vacations) {
-                    localStorage.setItem('vacations', JSON.stringify(backup.data.settings.vacations));
-                    vacations = backup.data.settings.vacations;
-                }
-                if (backup.data.settings.notificationSettings) {
-                    localStorage.setItem('notificationSettings', JSON.stringify(backup.data.settings.notificationSettings));
-                    notificationSettings = backup.data.settings.notificationSettings;
-                }
-                if (backup.data.settings.assistantSettings) {
-                    localStorage.setItem('assistantSettings', JSON.stringify(backup.data.settings.assistantSettings));
-                    assistantSettings = backup.data.settings.assistantSettings;
-                }
-                if (backup.data.settings.clientColors) {
-                    localStorage.setItem('clientColors', JSON.stringify(backup.data.settings.clientColors));
-                    clientColors = backup.data.settings.clientColors;
-                }
+            // Adapter le format pour importAllData
+            let importData;
+            if (hasV2Data) {
+                importData = backup;
+            } else if (hasV1Data) {
+                // Convertir v1 vers v2
+                importData = {
+                    version: '2.0',
+                    data: {
+                        days: backup.data.presences.map(p => ({
+                            id: p.id || Date.now() + Math.random(),
+                            date: p.date,
+                            client: p.client,
+                            duree: p.duree,
+                            notes: p.notes || '',
+                            created_at: p.created_at || new Date().toISOString()
+                        })),
+                        clients: [...new Set(backup.data.presences.map(p => p.client))].sort(),
+                        vacations: backup.data.settings?.vacations || [],
+                        settings: backup.data.settings || {}
+                    }
+                };
+            } else {
+                // Format legacy API
+                importData = backup;
             }
 
-            status.className = 'backup-status success';
-            status.textContent = `Restauration reussie! ${presenceCount} presences importees.`;
+            // Importer les donnees
+            const result = importAllData(importData, true);
 
-            // Recharger les donnees
-            await loadAllData();
-            renderVacationsList();
-            loadAssistantSettings();
-            renderClientColorsList();
+            if (result.success) {
+                status.className = 'backup-status success';
+                status.textContent = `Restauration reussie! ${result.imported.days} presences importees.`;
 
-            showToast('Donnees restaurees avec succes', 'success');
+                // Recharger les donnees dans l'app
+                loadData();
+                vacations = getAllVacations();
+                renderVacationsList();
+                loadAssistantSettings();
+                loadClientColors();
+                renderClientColorsList();
+
+                showToast('Donnees restaurees avec succes', 'success');
+            } else {
+                throw new Error(result.error);
+            }
 
         } catch (error) {
             console.error('Erreur restauration:', error);
@@ -1386,10 +1352,10 @@ function handleRestoreFile(event) {
 }
 
 // Reinitialisation complete
-async function resetAllData() {
+function resetAllData() {
     // Premier avertissement
     const confirm1 = confirm(
-        '⚠️ ATTENTION ⚠️\n\n' +
+        'ATTENTION\n\n' +
         'Vous etes sur le point de supprimer TOUTES vos donnees :\n' +
         '- Toutes les presences\n' +
         '- Tous les conges\n' +
@@ -1403,7 +1369,7 @@ async function resetAllData() {
 
     // Deuxieme confirmation
     const confirm2 = confirm(
-        '🗑️ CONFIRMATION FINALE 🗑️\n\n' +
+        'CONFIRMATION FINALE\n\n' +
         'Cette action est IRREVERSIBLE.\n\n' +
         'Etes-vous VRAIMENT sur de vouloir tout supprimer ?'
     );
@@ -1411,21 +1377,14 @@ async function resetAllData() {
     if (!confirm2) return;
 
     try {
-        // Supprimer les presences via API
-        const response = await fetch(`${API_BASE}/reset`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
+        // Supprimer toutes les donnees via storage.js
+        const result = resetAllData_storage();
 
-        if (!response.ok) throw new Error('Erreur API');
-
-        const result = await response.json();
-
-        // Supprimer les donnees localStorage
-        localStorage.removeItem('vacations');
+        // Supprimer aussi les autres donnees localStorage
         localStorage.removeItem('notificationSettings');
         localStorage.removeItem('assistantSettings');
         localStorage.removeItem('clientColors');
+        localStorage.removeItem('logmyjob_vacations');
 
         // Reinitialiser les variables
         vacations = [];
@@ -1436,6 +1395,7 @@ async function resetAllData() {
         allClients = [];
 
         // Recharger l'interface
+        loadData();
         renderVacationsList();
         loadAssistantSettings();
         renderClientColorsList();
@@ -1446,7 +1406,7 @@ async function resetAllData() {
         const config = document.getElementById('notifications-config');
         if (config) config.style.display = 'none';
 
-        showToast(`Reinitialisation terminee. ${result.deleted_count} presences supprimees.`, 'success');
+        showToast('Reinitialisation terminee.', 'success');
 
         // Retourner a l'accueil
         navigateTo('home');
@@ -1454,6 +1414,34 @@ async function resetAllData() {
     } catch (error) {
         console.error('Erreur reinitialisation:', error);
         showToast('Erreur lors de la reinitialisation', 'error');
+    }
+}
+
+// Alias pour eviter conflit de nom avec storage.js
+function resetAllData_storage() {
+    return resetAllData_internal();
+}
+
+function resetAllData_internal() {
+    try {
+        // Utiliser les fonctions de storage.js
+        saveToStorage('logmyjob_days', []);
+        saveToStorage('logmyjob_clients', []);
+        saveToStorage('logmyjob_vacations', []);
+        return { success: true };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+}
+
+// Fonction utilitaire pour sauvegarder dans localStorage (utilisee par resetAllData_internal)
+function saveToStorage(key, data) {
+    try {
+        localStorage.setItem(key, JSON.stringify(data));
+        return true;
+    } catch (e) {
+        console.error(`Error saving ${key}:`, e);
+        return false;
     }
 }
 
