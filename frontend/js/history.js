@@ -327,9 +327,9 @@ function createPresenceItem(presence) {
         </div>
         <div class="presence-notes">${presence.notes || '-'}</div>
         <div class="presence-actions">
-            <button class="btn-icon" onclick="duplicatePresence(${presence.id})" title="Dupliquer">📋</button>
-            <button class="btn-icon" onclick="editPresence(${presence.id})" title="Éditer">✏️</button>
-            <button class="btn-icon" onclick="deletePresence(${presence.id})" title="Supprimer">🗑️</button>
+            <button class="btn-icon" onclick="duplicatePresence('${presence.id}')" title="Dupliquer">📋</button>
+            <button class="btn-icon" onclick="editPresence('${presence.id}')" title="Éditer">✏️</button>
+            <button class="btn-icon" onclick="deletePresence('${presence.id}')" title="Supprimer">🗑️</button>
         </div>
     `;
 
@@ -384,9 +384,9 @@ function renderCompactView(presences) {
             <td>${getDurationIcon(presence.duree)} ${formatDurationShort(presence.duree)}</td>
             <td class="notes-cell">${presence.notes || '-'}</td>
             <td class="actions-cell">
-                <button class="btn-icon btn-small" onclick="duplicatePresence(${presence.id})">📋</button>
-                <button class="btn-icon btn-small" onclick="editPresence(${presence.id})">✏️</button>
-                <button class="btn-icon btn-small" onclick="deletePresence(${presence.id})">🗑️</button>
+                <button class="btn-icon btn-small" onclick="duplicatePresence('${presence.id}')">📋</button>
+                <button class="btn-icon btn-small" onclick="editPresence('${presence.id}')">✏️</button>
+                <button class="btn-icon btn-small" onclick="deletePresence('${presence.id}')">🗑️</button>
             </td>
         `;
         tbody.appendChild(row);
@@ -420,9 +420,9 @@ function renderTimelineView(presences) {
                 <div class="timeline-duration">${getDurationIcon(presence.duree)} ${formatDurationShort(presence.duree)}</div>
                 ${presence.notes ? `<div class="timeline-notes">${presence.notes}</div>` : ''}
                 <div class="timeline-actions">
-                    <button class="btn-icon btn-small" onclick="duplicatePresence(${presence.id})">📋</button>
-                    <button class="btn-icon btn-small" onclick="editPresence(${presence.id})">✏️</button>
-                    <button class="btn-icon btn-small" onclick="deletePresence(${presence.id})">🗑️</button>
+                    <button class="btn-icon btn-small" onclick="duplicatePresence('${presence.id}')">📋</button>
+                    <button class="btn-icon btn-small" onclick="editPresence('${presence.id}')">✏️</button>
+                    <button class="btn-icon btn-small" onclick="deletePresence('${presence.id}')">🗑️</button>
                 </div>
             </div>
         `;

@@ -516,8 +516,8 @@ function updateRecentDays() {
                 ${presence.notes ? `<div class="day-notes">${presence.notes}</div>` : ''}
             </div>
             <div class="day-actions">
-                <button class="btn-primary btn-small" onclick="editPresence(${presence.id})">✏️</button>
-                <button class="btn-danger btn-small" onclick="deletePresence(${presence.id})">🗑️</button>
+                <button class="btn-primary btn-small" onclick="editPresence('${presence.id}')">✏️</button>
+                <button class="btn-danger btn-small" onclick="deletePresence('${presence.id}')">🗑️</button>
             </div>
         `;
         recentList.appendChild(div);
@@ -633,8 +633,8 @@ function renderHistory() {
                 ${presence.notes ? `<div class="day-notes">${presence.notes}</div>` : ''}
             </div>
             <div class="day-actions">
-                <button class="btn-primary btn-small" onclick="editPresence(${presence.id})">✏️</button>
-                <button class="btn-danger btn-small" onclick="deletePresence(${presence.id})">🗑️</button>
+                <button class="btn-primary btn-small" onclick="editPresence('${presence.id}')">✏️</button>
+                <button class="btn-danger btn-small" onclick="deletePresence('${presence.id}')">🗑️</button>
             </div>
         `;
         historyList.appendChild(div);

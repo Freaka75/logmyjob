@@ -291,8 +291,8 @@ function showDayDetails(dateStr, presences) {
                 ${presence.notes ? `<div class="detail-notes">${presence.notes}</div>` : ''}
             </div>
             <div class="detail-actions">
-                <button class="btn-primary btn-small" onclick="editPresence(${presence.id})">✏️</button>
-                <button class="btn-danger btn-small" onclick="deletePresence(${presence.id})">🗑️</button>
+                <button class="btn-primary btn-small" onclick="editPresence('${presence.id}')">✏️</button>
+                <button class="btn-danger btn-small" onclick="deletePresence('${presence.id}')">🗑️</button>
             </div>
         `;
 
