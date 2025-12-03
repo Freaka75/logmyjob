@@ -525,7 +525,7 @@ function updateRecentDays() {
 }
 
 function editPresence(id) {
-    const presence = allPresences.find(p => p.id === id);
+    const presence = allPresences.find(p => String(p.id) === String(id));
     if (presence) {
         navigateTo('home');
         setTimeout(() => showForm(presence), 100);

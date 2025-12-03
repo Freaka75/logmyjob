@@ -439,7 +439,7 @@ function toggleSelectAll() {
 
     checkboxes.forEach(cb => {
         cb.checked = !allSelected;
-        const id = parseInt(cb.dataset.id);
+        const id = cb.dataset.id;
         if (!allSelected) {
             selectedPresences.add(id);
         } else {
@@ -459,16 +459,20 @@ function updateBulkActions() {
     }
 }
 
-async function deleteSelected() {
+function deleteSelected() {
     if (selectedPresences.size === 0) return;
 
-    if (!confirm(`Supprimer ${selectedPresences.size} entrées ?`)) return;
+    if (!confirm(`Supprimer ${selectedPresences.size} entrees ?`)) return;
 
-    const promises = Array.from(selectedPresences).map(id => deletePresence(id));
-    await Promise.all(promises);
+    // Supprimer toutes les presences selectionnees
+    Array.from(selectedPresences).forEach(id => {
+        deleteDay(id);
+    });
 
     selectedPresences.clear();
     updateBulkActions();
+    loadHistory();
+    loadData();
 }
 
 function exportSelectedToCSV() {
@@ -497,7 +501,7 @@ function exportSelectedToCSV() {
 
 // Dupliquer une présence
 function duplicatePresence(id) {
-    const presence = allPresences.find(p => p.id === id);
+    const presence = allPresences.find(p => String(p.id) === String(id));
     if (!presence) return;
 
     navigateTo('home');
