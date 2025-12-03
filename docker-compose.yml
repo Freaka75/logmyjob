@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  log-my-job:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: log-my-job-app
+    ports:
+      - "5000:5000"
+    volumes:
+      # Volume persistant pour la base de donnees
+      - log-my-job-data:/app/data
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_PATH=/app/data/presence.db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  log-my-job-data:
+    driver: local

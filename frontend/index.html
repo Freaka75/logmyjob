@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Application de suivi des jours de travail chez vos clients">
+    <title>Log My Job</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-gray-50 text-gray-800 pb-20">
+    <!-- Navigation bottom avec backdrop-blur -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-200 z-50 safe-area-bottom">
+        <div class="flex justify-around items-center h-16 max-w-lg mx-auto">
+            <button class="nav-item flex flex-col items-center justify-center px-3 py-2 text-gray-500 transition-colors active" data-page="home">
+                <span class="text-xl">🏠</span>
+                <span class="text-xs mt-1 font-medium">Accueil</span>
+            </button>
+            <button class="nav-item flex flex-col items-center justify-center px-3 py-2 text-gray-500 transition-colors" data-page="calendar">
+                <span class="text-xl">📅</span>
+                <span class="text-xs mt-1 font-medium">Calendrier</span>
+            </button>
+            <button class="nav-item flex flex-col items-center justify-center px-3 py-2 text-gray-500 transition-colors" data-page="history">
+                <span class="text-xl">📋</span>
+                <span class="text-xs mt-1 font-medium">Historique</span>
+            </button>
+            <button class="nav-item flex flex-col items-center justify-center px-3 py-2 text-gray-500 transition-colors" data-page="stats">
+                <span class="text-xl">📊</span>
+                <span class="text-xs mt-1 font-medium">Stats</span>
+            </button>
+            <button class="nav-item flex flex-col items-center justify-center px-3 py-2 text-gray-500 transition-colors" data-page="export">
+                <span class="text-xl">📤</span>
+                <span class="text-xs mt-1 font-medium">Partage</span>
+            </button>
+            <button class="nav-item flex flex-col items-center justify-center px-3 py-2 text-gray-500 transition-colors" data-page="settings">
+                <span class="text-xl">⚙️</span>
+                <span class="text-xs mt-1 font-medium">Reglages</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Accueil -->
+    <div id="page-home" class="page active min-h-screen">
+        <header class="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-6 shadow-lg">
+            <h1 class="text-2xl font-bold text-center">Log My Job</h1>
+        </header>
+
+        <div class="px-4 py-4 max-w-lg mx-auto space-y-4">
+            <!-- Banniere conges -->
+            <div id="vacation-banner" class="hidden bg-amber-100 border border-amber-300 rounded-xl p-4 flex items-center gap-3">
+                <span class="text-2xl">🏖️</span>
+                <span id="vacation-banner-text" class="text-amber-800 font-medium"></span>
+            </div>
+
+            <!-- Banniere installation PWA -->
+            <div id="install-banner" class="hidden install-banner bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-4 shadow-lg">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0 w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-white font-semibold text-sm">Installer l'application</h3>
+                        <p class="text-blue-100 text-xs mt-0.5">Acces rapide depuis votre ecran d'accueil</p>
+                    </div>
+                    <button id="install-banner-close" class="flex-shrink-0 text-white/70 hover:text-white p-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="flex gap-2 mt-3">
+                    <button id="install-banner-btn" class="flex-1 bg-white text-blue-600 font-semibold py-2.5 px-4 rounded-xl text-sm hover:bg-blue-50 transition-colors">
+                        Installer
+                    </button>
+                    <button id="install-banner-later" class="px-4 py-2.5 text-white/90 text-sm font-medium hover:text-white transition-colors">
+                        Plus tard
+                    </button>
+                </div>
+            </div>
+
+            <!-- Instructions iOS -->
+            <div id="ios-install-banner" class="hidden install-banner bg-gradient-to-r from-gray-700 to-gray-800 rounded-2xl p-4 shadow-lg">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0 w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-white font-semibold text-sm">Installer sur iPhone/iPad</h3>
+                        <p class="text-gray-300 text-xs mt-0.5">Ajoutez l'app a votre ecran d'accueil</p>
+                    </div>
+                    <button id="ios-banner-close" class="flex-shrink-0 text-white/70 hover:text-white p-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="mt-3 bg-white/10 rounded-xl p-3">
+                    <div class="flex items-center gap-3 text-white text-sm">
+                        <span class="flex items-center justify-center w-6 h-6 bg-white/20 rounded-full text-xs font-bold">1</span>
+                        <span>Appuyez sur</span>
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M16 5l-1.42 1.42-1.59-1.59V16h-1.98V4.83L9.42 6.42 8 5l4-4 4 4zm4 5v11c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2V10c0-1.1.9-2 2-2h3v2H6v11h12V10h-3V8h3c1.1 0 2 .9 2 2z"/>
+                        </svg>
+                        <span>(Partager)</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-white text-sm mt-2">
+                        <span class="flex items-center justify-center w-6 h-6 bg-white/20 rounded-full text-xs font-bold">2</span>
+                        <span>"Sur l'ecran d'accueil"</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                    </div>
+                </div>
+                <button id="ios-banner-understood" class="w-full mt-3 bg-white text-gray-800 font-semibold py-2.5 px-4 rounded-xl text-sm hover:bg-gray-100 transition-colors">
+                    J'ai compris
+                </button>
+            </div>
+
+            <!-- Widget ce mois -->
+            <div class="bg-white rounded-2xl shadow-md p-5">
+                <h2 id="current-month-label" class="text-lg font-semibold text-gray-700 mb-3">Ce mois</h2>
+                <div class="flex items-baseline gap-2 mb-4">
+                    <span class="text-4xl font-bold text-blue-600" id="month-total">0</span>
+                    <span class="text-gray-500">jours</span>
+                </div>
+                <div id="month-clients" class="space-y-2"></div>
+            </div>
+
+            <!-- Bouton rapide -->
+            <button id="btn-log-today" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl shadow-md transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+                Logger aujourd'hui
+            </button>
+
+            <!-- Formulaire de saisie -->
+            <div id="form-container" class="hidden bg-white rounded-2xl shadow-md p-5">
+                <h3 id="form-title" class="text-lg font-semibold text-gray-800 mb-4">Nouvelle presence</h3>
+                <form id="presence-form" class="space-y-4">
+                    <input type="hidden" id="edit-id" value="">
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                        <div class="flex gap-2 mb-2">
+                            <button type="button" class="quick-date-btn flex-1 py-2 px-3 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors" data-date="today">Aujourd'hui</button>
+                            <button type="button" class="quick-date-btn flex-1 py-2 px-3 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors" data-date="yesterday">Hier</button>
+                            <button type="button" class="quick-date-btn flex-1 py-2 px-3 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors" data-date="before-yesterday">Avant-hier</button>
+                        </div>
+                        <input type="date" id="date" name="date" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Client</label>
+                        <select id="client-select" name="client" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white">
+                            <option value="">-- Selectionner --</option>
+                        </select>
+                        <input type="text" id="client-input" name="client" placeholder="Ou saisir un nouveau client" class="w-full mt-2 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Duree</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <label class="radio-card cursor-pointer">
+                                <input type="radio" name="duree" value="journee_complete" checked class="hidden peer">
+                                <div class="peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-700 border-2 border-gray-200 rounded-xl p-3 text-center transition-all hover:border-gray-300">
+                                    <span class="text-2xl block mb-1">🌞</span>
+                                    <span class="text-sm font-medium block">Journee</span>
+                                    <span class="text-xs text-gray-500">1j</span>
+                                </div>
+                            </label>
+                            <label class="radio-card cursor-pointer">
+                                <input type="radio" name="duree" value="demi_journee_matin" class="hidden peer">
+                                <div class="peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-700 border-2 border-gray-200 rounded-xl p-3 text-center transition-all hover:border-gray-300">
+                                    <span class="text-2xl block mb-1">🌅</span>
+                                    <span class="text-sm font-medium block">Matin</span>
+                                    <span class="text-xs text-gray-500">0.5j</span>
+                                </div>
+                            </label>
+                            <label class="radio-card cursor-pointer">
+                                <input type="radio" name="duree" value="demi_journee_aprem" class="hidden peer">
+                                <div class="peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-700 border-2 border-gray-200 rounded-xl p-3 text-center transition-all hover:border-gray-300">
+                                    <span class="text-2xl block mb-1">🌆</span>
+                                    <span class="text-sm font-medium block">Apres-midi</span>
+                                    <span class="text-xs text-gray-500">0.5j</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">Notes (optionnel)</label>
+                        <textarea id="notes" name="notes" rows="3" placeholder="Contexte, projet, etc." class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+                    </div>
+
+                    <div class="flex gap-3 pt-2">
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors">Enregistrer</button>
+                        <button type="button" id="btn-cancel" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl transition-colors">Annuler</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Derniers jours logges -->
+            <div class="bg-white rounded-2xl shadow-md p-5">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Derniers jours</h3>
+                <div id="recent-list" class="space-y-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Calendrier -->
+    <div id="page-calendar" class="page hidden min-h-screen">
+        <header class="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-6 shadow-lg">
+            <h1 class="text-2xl font-bold text-center">Calendrier</h1>
+        </header>
+
+        <div class="px-4 py-4 max-w-lg mx-auto space-y-4">
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <button id="prev-month" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-xl">←</button>
+                    <h2 id="calendar-month" class="text-lg font-semibold text-gray-800"></h2>
+                    <button id="next-month" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-xl">→</button>
+                </div>
+
+                <div class="text-center mb-4">
+                    <span id="calendar-month-total" class="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">0 jours</span>
+                </div>
+
+                <div id="calendar-grid" class="calendar-grid"></div>
+            </div>
+
+            <div id="calendar-legend" class="flex flex-wrap gap-2 justify-center"></div>
+        </div>
+    </div>
+
+    <!-- Modal details du jour -->
+    <div id="day-details-modal" class="modal hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[80vh] overflow-auto">
+            <div class="flex items-center justify-between p-4 border-b">
+                <h3 id="day-details-title" class="text-lg font-semibold">Details du jour</h3>
+                <button class="modal-close w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500" id="day-details-close">&times;</button>
+            </div>
+            <div class="p-4">
+                <div id="day-details-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Historique -->
+    <div id="page-history" class="page hidden min-h-screen">
+        <header class="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-6 shadow-lg">
+            <h1 class="text-2xl font-bold text-center">Historique</h1>
+        </header>
+
+        <div class="px-4 py-4 max-w-lg mx-auto space-y-4">
+            <!-- Filtres -->
+            <div class="bg-white rounded-2xl shadow-md p-4 space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="filter-period" class="block text-xs font-medium text-gray-500 mb-1">Periode</label>
+                        <select id="filter-period" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white">
+                            <option value="all">Tous</option>
+                            <option value="this-month" selected>Ce mois</option>
+                            <option value="last-month">Mois dernier</option>
+                            <option value="last-3-months">3 derniers mois</option>
+                            <option value="this-year">Cette annee</option>
+                            <option value="custom">Personnalise</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter-client" class="block text-xs font-medium text-gray-500 mb-1">Client</label>
+                        <select id="filter-client" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white">
+                            <option value="">Tous</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="search-input" class="block text-xs font-medium text-gray-500 mb-1">Recherche</label>
+                    <input type="text" id="search-input" placeholder="Client, notes..." class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div id="custom-period" class="hidden grid grid-cols-2 gap-3 pt-2">
+                    <div>
+                        <label for="custom-start" class="block text-xs font-medium text-gray-500 mb-1">Du</label>
+                        <input type="date" id="custom-start" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label for="custom-end" class="block text-xs font-medium text-gray-500 mb-1">Au</label>
+                        <input type="date" id="custom-end" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                    </div>
+                    <button id="apply-custom-period" class="col-span-2 bg-blue-600 text-white text-sm py-2 rounded-lg hover:bg-blue-700 transition-colors">Appliquer</button>
+                </div>
+            </div>
+
+            <!-- Stats et vues -->
+            <div class="flex items-center justify-between">
+                <span id="history-count-text" class="text-sm font-medium text-gray-600">0 jours trouves</span>
+                <div class="flex bg-gray-100 rounded-lg p-1">
+                    <button class="view-toggle px-3 py-1.5 text-xs font-medium rounded-md transition-colors active" data-view="grouped">📋</button>
+                    <button class="view-toggle px-3 py-1.5 text-xs font-medium rounded-md transition-colors" data-view="compact">📊</button>
+                    <button class="view-toggle px-3 py-1.5 text-xs font-medium rounded-md transition-colors" data-view="timeline">📈</button>
+                </div>
+            </div>
+
+            <div class="hidden bulk-actions bg-white rounded-xl p-3 flex gap-2">
+                <button id="btn-select-all" class="text-xs px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200">Tout</button>
+                <button id="btn-export-selection" class="text-xs px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200">CSV</button>
+                <button id="btn-delete-selection" class="text-xs px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200">Suppr</button>
+            </div>
+
+            <div id="history-view-container">
+                <div id="view-grouped" class="history-view space-y-3"></div>
+                <div id="view-compact" class="history-view hidden"></div>
+                <div id="view-timeline" class="history-view hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Stats -->
+    <div id="page-stats" class="page hidden min-h-screen">
+        <header class="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-6 shadow-lg">
+            <h1 class="text-2xl font-bold text-center">Statistiques</h1>
+        </header>
+
+        <div class="px-4 py-4 max-w-lg mx-auto space-y-4">
+            <select id="stats-period" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium">
+                <option value="this-month">Ce mois</option>
+                <option value="last-3-months" selected>3 derniers mois</option>
+                <option value="last-6-months">6 derniers mois</option>
+                <option value="this-year">Cette annee</option>
+                <option value="all">Tout</option>
+            </select>
+
+            <!-- Widgets -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white rounded-2xl shadow-md p-4 text-center">
+                    <span class="text-2xl">📅</span>
+                    <div class="text-2xl font-bold text-blue-600 mt-1" id="stat-total-days">0</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">Jours</div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-md p-4 text-center">
+                    <span class="text-2xl">👥</span>
+                    <div class="text-2xl font-bold text-blue-600 mt-1" id="stat-total-clients">0</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">Clients</div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-md p-4 text-center">
+                    <span class="text-2xl">📆</span>
+                    <div class="text-2xl font-bold text-blue-600 mt-1" id="stat-avg-month">0</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">Moy/mois</div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-md p-4 text-center">
+                    <span class="text-2xl">📈</span>
+                    <div class="text-2xl font-bold text-blue-600 mt-1" id="stat-half-days">0%</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">Demi-j</div>
+                </div>
+            </div>
+
+            <!-- Graphique -->
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <h3 class="text-sm font-semibold text-gray-800 mb-3">Evolution mensuelle</h3>
+                <div class="h-48">
+                    <canvas id="stats-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Repartition clients -->
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <h3 class="text-sm font-semibold text-gray-800 mb-3">Repartition par client</h3>
+                <div id="client-distribution" class="space-y-3"></div>
+            </div>
+
+            <!-- Insights -->
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <h3 class="text-sm font-semibold text-gray-800 mb-3">Insights</h3>
+                <div id="stats-insights" class="space-y-2"></div>
+            </div>
+
+            <!-- Tableau mensuel -->
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-gray-800">Detail mensuel</h3>
+                    <button id="btn-export-stats-csv" class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">CSV</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm" id="monthly-stats-table">
+                        <thead>
+                            <tr class="text-left text-xs text-gray-500 uppercase">
+                                <th class="pb-2">Mois</th>
+                                <th class="pb-2">Jours</th>
+                                <th class="pb-2">Clients</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthly-stats-body" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Export -->
+    <div id="page-export" class="page hidden min-h-screen">
+        <header class="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-6 shadow-lg">
+            <h1 class="text-2xl font-bold text-center">Export & Partage</h1>
+        </header>
+
+        <div class="px-4 py-4 max-w-lg mx-auto space-y-4">
+            <!-- Periode -->
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <h3 class="text-sm font-semibold text-gray-800 mb-3">📅 Periode</h3>
+                <select id="export-period" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white text-sm">
+                    <option value="this-month" selected>Ce mois</option>
+                    <option value="last-month">Mois dernier</option>
+                    <option value="last-3-months">3 derniers mois</option>
+                    <option value="this-year">Cette annee</option>
+                    <option value="all">Tous</option>
+                    <option value="custom">Personnalise</option>
+                </select>
+                <div id="custom-period-export" class="hidden grid grid-cols-2 gap-3 mt-3">
+                    <input type="date" id="export-date-start" class="px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                    <input type="date" id="export-date-end" class="px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                    <button id="btn-apply-custom-export" class="col-span-2 bg-blue-600 text-white text-sm py-2 rounded-lg hover:bg-blue-700">Appliquer</button>
+                </div>
+                <div id="export-period-label" class="mt-2 text-sm text-blue-600 font-medium"></div>
+            </div>
+
+            <!-- Recap -->
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <h3 class="text-sm font-semibold text-gray-800 mb-3">📋 Recapitulatif</h3>
+                <label class="flex items-center gap-2 text-sm text-gray-600 mb-3 cursor-pointer">
+                    <input type="checkbox" id="show-detailed-view" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                    <span>Afficher le detail</span>
+                </label>
+                <div id="export-preview" class="text-sm"></div>
+                <div id="export-total" class="mt-3 pt-3 border-t text-right font-semibold text-blue-600"></div>
+            </div>
+
+            <!-- Boutons partage -->
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <h3 class="text-sm font-semibold text-gray-800 mb-3">Partager</h3>
+                <div class="grid grid-cols-4 gap-2">
+                    <button id="btn-copy-recap" class="share-btn flex flex-col items-center justify-center gap-2 p-4 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all hover:scale-105">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                        </svg>
+                        <span class="text-xs font-medium text-gray-600">Copier</span>
+                    </button>
+                    <button id="btn-email-recap" class="share-btn flex flex-col items-center justify-center gap-2 p-4 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all hover:scale-105">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        <span class="text-xs font-medium text-blue-600">Email</span>
+                    </button>
+                    <button id="btn-share-whatsapp" class="share-btn flex flex-col items-center justify-center gap-2 p-4 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all hover:scale-105">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="#25D366">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                        <span class="text-xs font-medium text-green-600">WhatsApp</span>
+                    </button>
+                    <button id="btn-download-csv" class="share-btn flex flex-col items-center justify-center gap-2 p-4 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all hover:scale-105">
+                        <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span class="text-xs font-medium text-amber-600">CSV</span>
+                    </button>
+                </div>
+                <div id="share-status" class="mt-3 text-center text-sm"></div>
+            </div>
+
+            <!-- Apercu email -->
+            <div class="bg-white rounded-2xl shadow-md overflow-hidden">
+                <button id="email-preview-toggle" class="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                    <span class="text-sm font-semibold text-gray-800">👁️ Apercu de l'email</span>
+                    <span class="collapse-icon text-gray-400">▶</span>
+                </button>
+                <div id="email-preview-content" class="hidden px-4 pb-4">
+                    <div id="email-preview" class="bg-gray-50 rounded-lg p-3 text-sm"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Reglages -->
+    <div id="page-settings" class="page hidden min-h-screen">
+        <header class="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-6 shadow-lg">
+            <h1 class="text-2xl font-bold text-center">Reglages</h1>
+        </header>
+
+        <div class="px-4 py-4 max-w-lg mx-auto space-y-4">
+            <!-- Apparence / Dark Mode -->
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <h2 class="text-base font-semibold text-gray-800 mb-3">🎨 Apparence</h2>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="font-medium text-sm">Mode sombre</div>
+                        <div class="text-xs text-gray-500">Reduire la fatigue oculaire</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="dark-mode-toggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+                <div class="mt-3 flex gap-2">
+                    <button id="theme-light" class="theme-btn flex-1 py-2 px-3 text-xs font-medium rounded-lg border-2 border-gray-200 hover:border-blue-500 transition-colors flex items-center justify-center gap-2">
+                        <span>☀️</span> Clair
+                    </button>
+                    <button id="theme-dark" class="theme-btn flex-1 py-2 px-3 text-xs font-medium rounded-lg border-2 border-gray-200 hover:border-blue-500 transition-colors flex items-center justify-center gap-2">
+                        <span>🌙</span> Sombre
+                    </button>
+                    <button id="theme-auto" class="theme-btn flex-1 py-2 px-3 text-xs font-medium rounded-lg border-2 border-gray-200 hover:border-blue-500 transition-colors flex items-center justify-center gap-2">
+                        <span>🖥️</span> Auto
+                    </button>
+                </div>
+            </div>
+
+            <!-- Application / Installation -->
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <h2 class="text-base font-semibold text-gray-800 mb-3">📱 Application</h2>
+
+                <!-- Statut: Non installe -->
+                <div id="app-not-installed" class="hidden">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-medium text-sm">Application non installee</div>
+                            <div class="text-xs text-gray-500">Installez pour un acces rapide</div>
+                        </div>
+                    </div>
+                    <button id="settings-install-btn" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Installer sur mon appareil
+                    </button>
+                </div>
+
+                <!-- Statut: iOS (instructions) -->
+                <div id="app-ios-instructions" class="hidden">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <svg class="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-medium text-sm">Installation sur iOS</div>
+                            <div class="text-xs text-gray-500">Suivez les etapes ci-dessous</div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                            <span>Appuyez sur le bouton Partager</span>
+                            <svg class="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M16 5l-1.42 1.42-1.59-1.59V16h-1.98V4.83L9.42 6.42 8 5l4-4 4 4zm4 5v11c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2V10c0-1.1.9-2 2-2h3v2H6v11h12V10h-3V8h3c1.1 0 2 .9 2 2z"/>
+                            </svg>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                            <span>Selectionnez "Sur l'ecran d'accueil"</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statut: Installe -->
+                <div id="app-installed" class="hidden">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-medium text-sm text-green-700">Application installee</div>
+                            <div class="text-xs text-gray-500">Acces rapide depuis votre ecran d'accueil</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications -->
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <h2 class="text-base font-semibold text-gray-800 mb-3">🔔 Notifications</h2>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="font-medium text-sm">Rappels quotidiens</div>
+                        <div class="text-xs text-gray-500">Notification pour logger votre journee</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="notifications-enabled" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
+                <div id="notification-warning" class="hidden mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2 text-xs text-amber-800">
+                    <span>⚠️</span>
+                    <span>Notifications HTTPS requises sur mobile. Fonctionne sur PC (localhost).</span>
+                </div>
+
+                <div id="notifications-config" class="hidden mt-4 space-y-3">
+                    <div>
+                        <label for="notification-time" class="block text-xs font-medium text-gray-500 mb-1">Heure</label>
+                        <input type="time" id="notification-time" value="18:00" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-2">Jours</label>
+                        <div class="flex gap-1 flex-wrap">
+                            <label class="weekday-item"><input type="checkbox" value="1" checked class="hidden peer"><span class="w-9 h-9 flex items-center justify-center text-xs font-medium border-2 rounded-full peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 cursor-pointer transition-colors">L</span></label>
+                            <label class="weekday-item"><input type="checkbox" value="2" checked class="hidden peer"><span class="w-9 h-9 flex items-center justify-center text-xs font-medium border-2 rounded-full peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 cursor-pointer transition-colors">M</span></label>
+                            <label class="weekday-item"><input type="checkbox" value="3" checked class="hidden peer"><span class="w-9 h-9 flex items-center justify-center text-xs font-medium border-2 rounded-full peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 cursor-pointer transition-colors">M</span></label>
+                            <label class="weekday-item"><input type="checkbox" value="4" checked class="hidden peer"><span class="w-9 h-9 flex items-center justify-center text-xs font-medium border-2 rounded-full peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 cursor-pointer transition-colors">J</span></label>
+                            <label class="weekday-item"><input type="checkbox" value="5" checked class="hidden peer"><span class="w-9 h-9 flex items-center justify-center text-xs font-medium border-2 rounded-full peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 cursor-pointer transition-colors">V</span></label>
+                            <label class="weekday-item"><input type="checkbox" value="6" class="hidden peer"><span class="w-9 h-9 flex items-center justify-center text-xs font-medium border-2 rounded-full peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 cursor-pointer transition-colors">S</span></label>
+                            <label class="weekday-item"><input type="checkbox" value="0" class="hidden peer"><span class="w-9 h-9 flex items-center justify-center text-xs font-medium border-2 rounded-full peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 cursor-pointer transition-colors">D</span></label>
+                        </div>
+                    </div>
+                    <button id="btn-test-notification" class="w-full py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Test notification</button>
+                </div>
+            </div>
+
+            <!-- Conges -->
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <h2 class="text-base font-semibold text-gray-800 mb-3">🏖️ Mes conges</h2>
+                <button id="btn-add-vacation" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors mb-3">+ Ajouter des conges</button>
+                <div id="vacations-list" class="space-y-2"></div>
+            </div>
+
+            <!-- Couleurs clients -->
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <h2 class="text-base font-semibold text-gray-800 mb-2">🎨 Couleurs clients</h2>
+                <p class="text-xs text-gray-500 mb-3">Personnalisez la couleur de chaque client.</p>
+                <div id="client-colors-list" class="space-y-2"></div>
+            </div>
+
+            <!-- Assistante -->
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <h2 class="text-base font-semibold text-gray-800 mb-3">📧 Assistante</h2>
+                <div class="space-y-3">
+                    <div>
+                        <label for="assistant-email" class="block text-xs font-medium text-gray-500 mb-1">Email</label>
+                        <input type="email" id="assistant-email" placeholder="assistante@example.com" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="assistant-name" class="block text-xs font-medium text-gray-500 mb-1">Nom</label>
+                        <input type="text" id="assistant-name" placeholder="Prenom Nom" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="assistant-message" class="block text-xs font-medium text-gray-500 mb-1">Message personnalise</label>
+                        <textarea id="assistant-message" rows="2" placeholder="Message dans les emails..." class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                    </div>
+                    <button id="btn-save-assistant" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">Sauvegarder</button>
+                </div>
+            </div>
+
+            <!-- Sauvegarde -->
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <h2 class="text-base font-semibold text-gray-800 mb-2">💾 Sauvegarde</h2>
+                <p class="text-xs text-gray-500 mb-3">Sauvegardez ou restaurez vos donnees.</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="btn-backup" class="flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                        <span>📥</span> Sauvegarder
+                    </button>
+                    <button id="btn-restore" class="flex items-center justify-center gap-2 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors">
+                        <span>📤</span> Restaurer
+                    </button>
+                </div>
+                <input type="file" id="restore-file-input" accept=".json" class="hidden">
+                <div id="backup-status" class="mt-3 text-center text-sm"></div>
+            </div>
+
+            <!-- Zone danger -->
+            <div class="bg-red-50 border-2 border-red-200 rounded-2xl p-4">
+                <h2 class="text-base font-semibold text-red-700 mb-2">⚠️ Zone de danger</h2>
+                <p class="text-xs text-red-600 mb-3">Cette action supprimera toutes vos donnees. Effectuez une sauvegarde avant !</p>
+                <button id="btn-reset-all" class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors">
+                    🗑️ Reinitialiser toutes les donnees
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal conges -->
+    <div id="vacation-modal" class="modal hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div class="flex items-center justify-between p-4 border-b">
+                <h3 id="vacation-modal-title" class="text-lg font-semibold">Ajouter des conges</h3>
+                <button class="modal-close w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500" id="vacation-modal-close">&times;</button>
+            </div>
+            <form id="vacation-form" class="p-4 space-y-4">
+                <input type="hidden" id="vacation-edit-id" value="">
+                <div>
+                    <label for="vacation-start" class="block text-sm font-medium text-gray-700 mb-1">Date debut</label>
+                    <input type="date" id="vacation-start" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="vacation-end" class="block text-sm font-medium text-gray-700 mb-1">Date fin</label>
+                    <input type="date" id="vacation-end" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="vacation-type" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select id="vacation-type" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white">
+                        <option value="conges">Conges</option>
+                        <option value="rtt">RTT</option>
+                        <option value="ferie">Ferie</option>
+                        <option value="autre">Autre</option>
+                    </select>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="submit" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">Enregistrer</button>
+                    <button type="button" id="vacation-cancel" class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-xl shadow-lg opacity-0 transition-opacity z-50"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/calendar.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/stats.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(r => console.log('SW:', r))
+                    .catch(e => console.log('SW err:', e));
+            });
+        }
+    </script>
+</body>
+</html>
