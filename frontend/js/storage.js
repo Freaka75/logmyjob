@@ -493,3 +493,35 @@ function setSetting(key, value) {
     settings[key] = value;
     return saveSettings(settings);
 }
+
+// ============ AUTO-BACKUP ============
+
+const AUTO_BACKUP_KEY = 'logmyjob_autobackup_enabled';
+
+function isAutoBackupEnabled() {
+    return localStorage.getItem(AUTO_BACKUP_KEY) === 'true';
+}
+
+function setAutoBackupEnabled(enabled) {
+    localStorage.setItem(AUTO_BACKUP_KEY, enabled ? 'true' : 'false');
+}
+
+function triggerAutoBackup() {
+    if (!isAutoBackupEnabled()) return;
+
+    try {
+        const backup = exportAllData();
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const dateStr = new Date().toISOString().split('T')[0];
+        const timeStr = new Date().toTimeString().split(' ')[0].replace(/:/g, '-');
+        link.href = url;
+        link.download = `logmyjob_autobackup_${dateStr}_${timeStr}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+        console.log('Auto-backup downloaded');
+    } catch (e) {
+        console.error('Auto-backup error:', e);
+    }
+}

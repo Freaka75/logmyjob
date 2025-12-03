@@ -402,6 +402,8 @@ function savePresence() {
         showToast(currentEditId ? 'Jour mis a jour' : 'Jour enregistre', 'success');
         hideForm();
         loadData();
+        // Trigger auto-backup if enabled
+        triggerAutoBackup();
     } else {
         showToast(result.error || 'Erreur lors de l\'enregistrement', 'error');
     }
@@ -1200,6 +1202,7 @@ function initBackup() {
     const btnRestore = document.getElementById('btn-restore');
     const btnReset = document.getElementById('btn-reset-all');
     const fileInput = document.getElementById('restore-file-input');
+    const autoBackupToggle = document.getElementById('auto-backup-toggle');
 
     if (btnBackup) {
         btnBackup.addEventListener('click', backupData);
@@ -1215,6 +1218,21 @@ function initBackup() {
 
     if (btnReset) {
         btnReset.addEventListener('click', resetAllData);
+    }
+
+    // Auto-backup toggle
+    if (autoBackupToggle) {
+        // Load saved state
+        autoBackupToggle.checked = isAutoBackupEnabled();
+
+        autoBackupToggle.addEventListener('change', () => {
+            setAutoBackupEnabled(autoBackupToggle.checked);
+            if (autoBackupToggle.checked) {
+                showToast('Sauvegarde auto activee', 'success');
+            } else {
+                showToast('Sauvegarde auto desactivee', 'info');
+            }
+        });
     }
 }
 
