@@ -103,7 +103,13 @@ curl -I https://votre-domaine.com/
 
 Les donnees sont stockees dans le navigateur de chaque utilisateur.
 
-### Pour sauvegarder
+### Sauvegarde automatique (recommande)
+1. Ouvrir l'application
+2. Aller dans **Reglages** > **Sauvegarde**
+3. Activer **"Sauvegarde automatique"**
+4. Un fichier JSON est telecharge automatiquement apres chaque saisie
+
+### Pour sauvegarder manuellement
 1. Ouvrir l'application
 2. Aller dans **Reglages** > **Sauvegarde**
 3. Cliquer sur **"Sauvegarder"**
@@ -134,7 +140,7 @@ Les donnees sont stockees dans le navigateur de chaque utilisateur.
 - Les donnees sont dans le navigateur (localStorage)
 - Changer de navigateur = nouvelles donnees
 - Vider le cache = perte des donnees
-- **Solution** : Utiliser la fonction Sauvegarde regulierement
+- **Solution** : Activer la sauvegarde automatique dans les Reglages
 
 ## Performance
 

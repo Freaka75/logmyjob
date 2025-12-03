@@ -16,6 +16,7 @@ PWA de suivi des jours de presence client pour freelances - 100% offline avec lo
 - Mode sombre
 - Changement de langue (FR/EN)
 - Sauvegarde/Restauration des donnees (JSON)
+- Sauvegarde automatique apres chaque saisie (optionnel)
 - Mode offline complet grace a la PWA
 - Installation sur mobile (Android/iOS)
 
@@ -113,6 +114,7 @@ Toutes les donnees sont stockees dans le navigateur :
 | `logmyjob_days` | Tableau des jours de presence |
 | `logmyjob_clients` | Liste des clients |
 | `logmyjob_vacations` | Periodes de conges |
+| `logmyjob_autobackup_enabled` | Sauvegarde auto activee (true/false) |
 | `clientColors` | Couleurs personnalisees par client |
 | `app-language` | Langue (fr/en) |
 | `theme` | Theme (light/dark/auto) |
@@ -164,11 +166,17 @@ Toutes les donnees sont stockees dans le navigateur :
 - Couleurs personnalisees par client
 - Configuration email assistante
 - Sauvegarde/Restauration (JSON)
+- Sauvegarde automatique
 - Installation PWA
 
 ## Sauvegarde et Restauration
 
-### Sauvegarder
+### Sauvegarde automatique
+1. Aller dans Reglages > Sauvegarde
+2. Activer "Sauvegarde automatique"
+3. Un fichier JSON est telecharge automatiquement apres chaque saisie
+
+### Sauvegarder manuellement
 1. Aller dans Reglages > Sauvegarde
 2. Cliquer sur "Sauvegarder"
 3. Un fichier JSON est telecharge
@@ -177,6 +185,9 @@ Toutes les donnees sont stockees dans le navigateur :
 1. Aller dans Reglages > Sauvegarde
 2. Cliquer sur "Restaurer"
 3. Selectionner le fichier JSON de sauvegarde
+
+> **Important** : Les donnees sont stockees dans le navigateur.
+> Pensez a sauvegarder regulierement ou activer la sauvegarde automatique.
 
 ## Technologies
 
