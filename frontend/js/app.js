@@ -235,9 +235,9 @@ function initFormHandlers() {
 
     btnCancel.addEventListener('click', hideForm);
 
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', (e) => {
         e.preventDefault();
-        await savePresence();
+        savePresence();
     });
 
     // Gérer la sélection client vs input libre
