@@ -2,6 +2,10 @@
 
 Guide de deploiement de Log My Job sur Coolify.
 
+> **Note** : Cette application utilise localStorage pour stocker les donnees.
+> Chaque utilisateur a ses propres donnees dans son navigateur.
+> Pas de base de donnees serveur a configurer.
+
 ## Pre-requis
 
 - Serveur Coolify operationnel
@@ -14,7 +18,7 @@ Guide de deploiement de Log My Job sur Coolify.
 
 1. Dans Coolify, cliquez sur **"New Resource"** > **"Application"**
 2. Selectionnez **"Docker"** comme type
-3. Connectez votre repository Git
+3. Connectez votre repository Git : `https://github.com/Freaka75/logmyjob.git`
 
 ### 2. Configuration du build
 
@@ -26,12 +30,11 @@ Guide de deploiement de Log My Job sur Coolify.
 
 ### 3. Variables d'environnement
 
-Ajoutez ces variables dans la section **"Environment Variables"** :
-
 ```env
 FLASK_ENV=production
-DATABASE_PATH=/app/data/presence.db
 ```
+
+> Pas besoin de DATABASE_PATH - les donnees sont en localStorage cote client.
 
 ### 4. Configuration reseau
 
@@ -40,16 +43,7 @@ DATABASE_PATH=/app/data/presence.db
 | Port | `5000` |
 | Protocol | HTTP |
 
-### 5. Volume persistant (IMPORTANT)
-
-Pour conserver la base de donnees entre les redemarrages :
-
-1. Allez dans **"Storages"** ou **"Persistent Storage"**
-2. Ajoutez un volume :
-   - **Source** : `/app/data` (dans le container)
-   - **Name** : `log-my-job-data` (ou autre nom)
-
-### 6. Health Check
+### 5. Health Check
 
 Coolify detecte automatiquement le health check depuis le Dockerfile.
 Si besoin de configuration manuelle :
@@ -60,11 +54,13 @@ Si besoin de configuration manuelle :
 | Health Check Port | `5000` |
 | Health Check Method | GET |
 
-### 7. Domaine et SSL
+### 6. Domaine et SSL
 
 1. Dans **"Domains"**, ajoutez votre domaine (ex: `logmyjob.example.com`)
 2. Activez **"Let's Encrypt"** pour SSL automatique
 3. Forcez HTTPS si souhaite
+
+> **Important** : HTTPS est requis pour l'installation PWA sur mobile.
 
 ## Deploiement
 
@@ -77,35 +73,11 @@ Si besoin de configuration manuelle :
 ```bash
 # Tester le health check
 curl https://votre-domaine.com/api/health
-# Reponse attendue: {"status":"ok"}
+# Reponse attendue: {"status":"ok","storage":"localStorage"}
 
 # Tester la page d'accueil
 curl -I https://votre-domaine.com/
 # Reponse attendue: HTTP/2 200
-```
-
-## Commandes utiles
-
-### Voir les logs
-Dans Coolify : Application > Logs
-
-### Redemarrer l'application
-Dans Coolify : Application > Restart
-
-### Backup de la base de donnees
-```bash
-# Via l'interface de l'app
-# Aller dans Reglages > Sauvegarde > Sauvegarder
-
-# Ou via API
-curl https://votre-domaine.com/api/backup > backup.json
-```
-
-### Restaurer une sauvegarde
-```bash
-curl -X POST -H "Content-Type: application/json" \
-  -d @backup.json \
-  https://votre-domaine.com/api/restore
 ```
 
 ## Structure des fichiers deployes
@@ -113,29 +85,40 @@ curl -X POST -H "Content-Type: application/json" \
 ```
 /app/
 ├── backend/
-│   ├── app.py          # Application Flask
-│   ├── database.py     # Gestion BDD
+│   ├── app.py          # Serveur Flask (fichiers statiques)
 │   └── requirements.txt
-├── frontend/
-│   ├── index.html      # Interface web
-│   ├── css/
-│   ├── js/
-│   ├── icons/
-│   ├── manifest.json
-│   └── sw.js
-└── data/
-    └── presence.db     # Base de donnees (volume persistant)
+└── frontend/
+    ├── index.html      # Application SPA
+    ├── css/
+    ├── js/
+    │   ├── storage.js  # Gestion localStorage
+    │   ├── app.js
+    │   └── ...
+    ├── icons/
+    ├── manifest.json
+    └── sw.js
 ```
+
+## Sauvegarde des donnees
+
+Les donnees sont stockees dans le navigateur de chaque utilisateur.
+
+### Pour sauvegarder
+1. Ouvrir l'application
+2. Aller dans **Reglages** > **Sauvegarde**
+3. Cliquer sur **"Sauvegarder"**
+4. Un fichier JSON est telecharge
+
+### Pour restaurer
+1. Aller dans **Reglages** > **Sauvegarde**
+2. Cliquer sur **"Restaurer"**
+3. Selectionner le fichier JSON
 
 ## Troubleshooting
 
 ### L'application ne demarre pas
 1. Verifiez les logs dans Coolify
 2. Assurez-vous que le port 5000 est bien configure
-3. Verifiez que les variables d'environnement sont definies
-
-### Base de donnees perdue apres redemarrage
-- Assurez-vous que le volume persistant est configure pour `/app/data`
 
 ### Erreur 502 Bad Gateway
 - Le container n'est pas encore pret
@@ -146,6 +129,12 @@ curl -X POST -H "Content-Type: application/json" \
 - Assurez-vous que HTTPS est active
 - Verifiez que le manifest.json est accessible
 - Verifiez la console du navigateur pour des erreurs
+
+### Donnees perdues
+- Les donnees sont dans le navigateur (localStorage)
+- Changer de navigateur = nouvelles donnees
+- Vider le cache = perte des donnees
+- **Solution** : Utiliser la fonction Sauvegarde regulierement
 
 ## Performance
 
@@ -162,4 +151,5 @@ Le Dockerfile est configure avec :
 2. Coolify detecte automatiquement les changements (si webhook configure)
 3. Ou cliquez manuellement sur **"Deploy"**
 
-La base de donnees est preservee grace au volume persistant.
+> Les donnees utilisateur ne sont pas affectees par les mises a jour
+> (elles sont dans le navigateur, pas sur le serveur).

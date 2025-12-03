@@ -2,6 +2,8 @@
 
 PWA de suivi des jours de presence client pour freelances - 100% offline avec localStorage
 
+**100% offline** - Toutes les donnees sont stockees localement dans votre navigateur (localStorage).
+
 ## Fonctionnalites
 
 - Saisie rapide des jours de presence
@@ -12,9 +14,18 @@ PWA de suivi des jours de presence client pour freelances - 100% offline avec lo
 - Export CSV et partage WhatsApp/Email
 - Gestion des conges
 - Mode sombre
-- Sauvegarde/Restauration des donnees
-- Mode offline grace a la PWA
+- Changement de langue (FR/EN)
+- Sauvegarde/Restauration des donnees (JSON)
+- Mode offline complet grace a la PWA
 - Installation sur mobile (Android/iOS)
+
+## Avantages de l'architecture localStorage
+
+- **100% offline** : Fonctionne sans connexion internet
+- **Donnees privees** : Chaque utilisateur a ses propres donnees
+- **Pas de conflit** : Pas de partage de donnees entre utilisateurs
+- **Simple** : Pas de base de donnees a configurer ou maintenir
+- **Rapide** : Acces instantane aux donnees
 
 ## Deploiement rapide avec Docker
 
@@ -22,8 +33,8 @@ PWA de suivi des jours de presence client pour freelances - 100% offline avec lo
 
 ```bash
 # Cloner le projet
-git clone <url-du-repo>
-cd presence-tracker-pwa
+git clone https://github.com/Freaka75/logmyjob.git
+cd logmyjob
 
 # Lancer avec Docker Compose
 docker-compose up -d
@@ -39,7 +50,7 @@ open http://localhost:5000
 docker build -t log-my-job .
 
 # Lancer le container
-docker run -d -p 5000:5000 -v log-my-job-data:/app/data --name log-my-job log-my-job
+docker run -d -p 5000:5000 --name log-my-job log-my-job
 
 # Acceder a l'application
 open http://localhost:5000
@@ -56,7 +67,7 @@ Voir le guide complet dans [DEPLOY.md](DEPLOY.md)
 - Python 3.9+
 - pip
 
-### Backend
+### Lancer le serveur
 
 ```bash
 cd backend
@@ -66,25 +77,19 @@ python app.py
 
 Le serveur demarre sur `http://localhost:5000`
 
-### Frontend (optionnel, pour dev separe)
-
-```bash
-cd frontend
-python -m http.server 8080
-```
-
 ## Structure du projet
 
 ```
-presence-tracker-pwa/
+logmyjob/
 ├── backend/
-│   ├── app.py              # API Flask + serveur frontend
-│   ├── database.py         # Gestion SQLite
+│   ├── app.py              # Serveur Flask (sert les fichiers statiques)
 │   └── requirements.txt    # Dependances Python
 ├── frontend/
 │   ├── index.html          # Application SPA
 │   ├── css/style.css       # Styles (Tailwind + custom)
 │   ├── js/
+│   │   ├── storage.js      # Gestion localStorage
+│   │   ├── translations.js # Traductions FR/EN
 │   │   ├── app.js          # Logique principale
 │   │   ├── calendar.js     # Vue calendrier
 │   │   ├── history.js      # Vue historique
@@ -99,33 +104,29 @@ presence-tracker-pwa/
 └── README.md
 ```
 
-## API Backend
+## Stockage des donnees (localStorage)
 
-### Endpoints principaux
+Toutes les donnees sont stockees dans le navigateur :
 
-| Methode | Endpoint | Description |
-|---------|----------|-------------|
-| GET | `/api/health` | Health check |
-| POST | `/api/days` | Creer un jour |
-| GET | `/api/days` | Liste des jours |
-| PUT | `/api/days/<id>` | Modifier un jour |
-| DELETE | `/api/days/<id>` | Supprimer un jour |
-| GET | `/api/clients` | Liste des clients |
-| GET | `/api/stats/monthly` | Statistiques mensuelles |
-| GET | `/api/backup` | Export des donnees |
-| POST | `/api/restore` | Restauration |
-| POST | `/api/reset` | Reinitialisation |
+| Cle | Description |
+|-----|-------------|
+| `logmyjob_days` | Tableau des jours de presence |
+| `logmyjob_clients` | Liste des clients |
+| `logmyjob_vacations` | Periodes de conges |
+| `clientColors` | Couleurs personnalisees par client |
+| `app-language` | Langue (fr/en) |
+| `theme` | Theme (light/dark/auto) |
 
-### Modele de donnees
+### Format des donnees
 
 ```json
 {
-  "id": 1,
+  "id": "1701234567890abc",
   "date": "2025-01-15",
   "client": "Client A",
   "duree": "journee_complete",
   "notes": "Notes optionnelles",
-  "created_at": "2025-01-15T10:00:00"
+  "created_at": "2025-01-15T10:00:00.000Z"
 }
 ```
 
@@ -157,24 +158,31 @@ presence-tracker-pwa/
 
 ### Reglages
 - Mode sombre (auto/manuel)
+- Langue (Francais/English)
 - Notifications de rappel
 - Gestion des conges
 - Couleurs personnalisees par client
 - Configuration email assistante
-- Sauvegarde/Restauration
+- Sauvegarde/Restauration (JSON)
 - Installation PWA
 
-## Variables d'environnement
+## Sauvegarde et Restauration
 
-| Variable | Description | Defaut |
-|----------|-------------|--------|
-| `FLASK_ENV` | Environnement | `development` |
-| `DATABASE_PATH` | Chemin base de donnees | `./presence.db` |
+### Sauvegarder
+1. Aller dans Reglages > Sauvegarde
+2. Cliquer sur "Sauvegarder"
+3. Un fichier JSON est telecharge
+
+### Restaurer
+1. Aller dans Reglages > Sauvegarde
+2. Cliquer sur "Restaurer"
+3. Selectionner le fichier JSON de sauvegarde
 
 ## Technologies
 
-- **Backend** : Python, Flask, Gunicorn, SQLite
+- **Backend** : Python, Flask, Gunicorn (serveur de fichiers statiques)
 - **Frontend** : HTML5, Tailwind CSS, JavaScript ES6+
+- **Stockage** : localStorage (100% client-side)
 - **PWA** : Service Worker, Web App Manifest
 - **Deploiement** : Docker, Coolify
 
