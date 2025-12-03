@@ -1,6 +1,6 @@
 # Log My Job - PWA
 
-Application Progressive Web App (PWA) pour tracker vos jours de presence chez vos clients.
+PWA de suivi des jours de presence client pour freelances - 100% offline avec localStorage
 
 ## Fonctionnalites
 
