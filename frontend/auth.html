@@ -259,6 +259,9 @@
                 <div class="forgot-password">
                     <a href="#" id="forgot-password-link">Mot de passe oublie ?</a>
                 </div>
+                <div class="forgot-password">
+                    <a href="#" id="resend-confirmation-link">Email de confirmation non recu ?</a>
+                </div>
             </form>
 
             <!-- Formulaire d'inscription -->
@@ -310,6 +313,23 @@
                     Reinitialiser
                 </button>
                 <button type="button" id="back-to-login-2" class="auth-btn auth-btn-secondary" style="margin-top: 8px;">
+                    Retour
+                </button>
+            </form>
+
+            <!-- Formulaire renvoyer confirmation -->
+            <form id="resend-form" class="auth-form">
+                <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 14px;">
+                    Entrez votre email pour recevoir un nouveau lien de confirmation.
+                </p>
+                <div class="form-group">
+                    <label for="resend-email">Email</label>
+                    <input type="email" id="resend-email" required autocomplete="email">
+                </div>
+                <button type="submit" class="auth-btn auth-btn-primary">
+                    Renvoyer
+                </button>
+                <button type="button" id="back-to-login-3" class="auth-btn auth-btn-secondary" style="margin-top: 8px;">
                     Retour
                 </button>
             </form>
@@ -510,6 +530,48 @@
         });
 
         document.getElementById('back-to-login-2').addEventListener('click', () => {
+            forms.forEach(f => f.classList.remove('active'));
+            document.getElementById('login-form').classList.add('active');
+            tabs[0].classList.add('active');
+            hideMessages();
+        });
+
+        // Renvoyer email de confirmation
+        document.getElementById('resend-confirmation-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            forms.forEach(f => f.classList.remove('active'));
+            document.getElementById('resend-form').classList.add('active');
+            tabs.forEach(t => t.classList.remove('active'));
+            hideMessages();
+        });
+
+        document.getElementById('resend-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const email = document.getElementById('resend-email').value;
+            const form = e.target;
+            const btn = form.querySelector('button[type="submit"]');
+            btn.dataset.originalText = btn.textContent;
+
+            setLoading(form, true);
+
+            try {
+                const supabase = getSupabase();
+                const { error } = await supabase.auth.resend({
+                    type: 'signup',
+                    email: email
+                });
+                if (error) throw error;
+                showSuccess('Email de confirmation renvoye ! Verifiez votre boite de reception.');
+                setLoading(form, false);
+            } catch (error) {
+                showError(error.message || 'Erreur lors de l'envoi');
+                setLoading(form, false);
+            }
+        });
+
+        document.getElementById('back-to-login-3').addEventListener('click', () => {
             forms.forEach(f => f.classList.remove('active'));
             document.getElementById('login-form').classList.add('active');
             tabs[0].classList.add('active');
