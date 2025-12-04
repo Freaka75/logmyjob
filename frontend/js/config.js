@@ -1,10 +1,10 @@
-// Configuration Supabase - A modifier selon l'environnement
+// Configuration Supabase
 const CONFIG = {
-    // URL de ton instance Supabase
-    SUPABASE_URL: 'https://your-project.supabase.co',
+    // URL de l'instance Supabase
+    SUPABASE_URL: 'https://supabase.mormagstudio.eu',
 
     // Cle publique anon (safe to expose)
-    SUPABASE_ANON_KEY: 'your-anon-key',
+    SUPABASE_ANON_KEY: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc2NDg4MTM0MCwiZXhwIjo0OTIwNTU0OTQwLCJyb2xlIjoiYW5vbiJ9.b409MzL7-bPwjjJIkqN9OQeHLg0g1hj4d7briDqOGO4',
 
     // Nom de l'application
     APP_NAME: 'Log My Job',
