@@ -255,11 +255,28 @@ function renderExportPreview() {
         const fullCount = data.fullDays.length;
         const halfCount = data.halfDaysMorning.length + data.halfDaysAfternoon.length;
 
+        // Construire la liste des jours pour l'affichage compact
+        let allDays = [...data.fullDays];
+        data.halfDaysMorning.forEach(d => {
+            const dayNum = parseInt(d.split(' ')[0]);
+            if (!allDays.includes(dayNum)) allDays.push(dayNum);
+        });
+        data.halfDaysAfternoon.forEach(d => {
+            const dayNum = parseInt(d.split(' ')[0]);
+            if (!allDays.includes(dayNum)) allDays.push(dayNum);
+        });
+        allDays.sort((a, b) => a - b);
+        
         let detail = '';
         if (fullCount > 0) detail += `${fullCount} journee${fullCount > 1 ? 's' : ''}`;
         if (halfCount > 0) {
             if (detail) detail += ' + ';
             detail += `${halfCount} demi-journee${halfCount > 1 ? 's' : ''}`;
+        }
+        
+        // Ajouter les jours du mois
+        if (allDays.length > 0) {
+            detail += `<br><span class="days-list">Jours : ${allDays.join(', ')}</span>`;
         }
 
         html += `<tr>`;

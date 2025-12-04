@@ -821,3 +821,29 @@ body.dark {
 .vacation-detail {
     border: 2px solid #f59e0b;
 }
+
+/* ============ EXPORT DAYS LIST ============ */
+
+.days-list {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    font-style: italic;
+}
+
+.export-table .detail-row {
+    background: var(--bg-tertiary);
+}
+
+.export-table .month-detail-header {
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 4px;
+}
+
+.export-table .detail-line {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding-left: 12px;
+}
