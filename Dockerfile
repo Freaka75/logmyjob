@@ -3,6 +3,9 @@
 
 FROM nginx:alpine
 
+# Installer curl pour le healthcheck
+RUN apk add --no-cache curl
+
 # Copier le frontend
 COPY frontend/ /usr/share/nginx/html/
 
@@ -36,8 +39,8 @@ RUN echo 'server { \
 # Exposer le port
 EXPOSE 80
 
-# Health check
+# Health check avec curl
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost/api/health || exit 1
+    CMD curl -f http://localhost/api/health || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
