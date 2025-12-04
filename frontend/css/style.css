@@ -701,3 +701,123 @@ body.dark {
         --input-bg: #334155;
     }
 }
+
+/* ============ RECENT DAYS COLOR BAR ============ */
+
+.day-item {
+    display: flex;
+    align-items: stretch;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.day-color-bar {
+    width: 6px;
+    flex-shrink: 0;
+}
+
+.day-item .day-info {
+    flex: 1;
+    padding: 12px 16px;
+}
+
+.day-item .day-date {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.day-item .day-client {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.day-item .day-duration {
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.day-item .day-notes {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-style: italic;
+    margin-top: 4px;
+}
+
+.day-item .day-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+}
+
+/* ============ CALENDAR DETAIL MODAL ============ */
+
+.day-detail-item {
+    display: flex;
+    align-items: stretch;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.day-detail-item .detail-color-bar {
+    width: 6px;
+    flex-shrink: 0;
+}
+
+.day-detail-item .detail-content {
+    flex: 1;
+    padding: 12px 16px;
+}
+
+.day-detail-item .detail-client {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.day-detail-item .detail-notes {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-style: italic;
+    margin-top: 8px;
+}
+
+.day-detail-item .detail-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+}
+
+.detail-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.detail-badge.full {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.detail-badge.half {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.detail-badge.vacation {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.vacation-detail {
+    border: 2px solid #f59e0b;
+}

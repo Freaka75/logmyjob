@@ -499,7 +499,9 @@ function updateRecentDays() {
     recent.forEach(presence => {
         const div = document.createElement('div');
         div.className = 'day-item';
+        const clientColor = getClientColor(presence.client);
         div.innerHTML = `
+            <div class="day-color-bar" style="background-color: ${clientColor}"></div>
             <div class="day-info">
                 <div class="day-date">${formatDate(presence.date)}</div>
                 <div class="day-client">${presence.client}</div>

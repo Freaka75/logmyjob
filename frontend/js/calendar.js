@@ -122,6 +122,7 @@ function createCalendarDay(day, otherMonth, isToday = false, presences = null, d
     }
     if (isVacation) {
         cell.classList.add('vacation-day');
+        cell.style.cursor = 'pointer';
     }
 
     const number = document.createElement('div');
@@ -187,6 +188,10 @@ function createCalendarDay(day, otherMonth, isToday = false, presences = null, d
         cell.title = tooltip;
     } else if (isVacation) {
         cell.title = '🏖️ Congés';
+        // Rendre les jours de congés cliquables même sans présences
+        cell.addEventListener('click', () => {
+            showDayDetails(dateStr, []);
+        });
     }
 
     return cell;
