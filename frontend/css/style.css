@@ -847,3 +847,49 @@ body.dark {
     color: var(--text-secondary);
     padding-left: 12px;
 }
+
+/* ============ EXPORT TABLE IMPROVED ============ */
+
+.export-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.export-table th {
+    text-align: left;
+    padding: 12px 8px;
+    border-bottom: 2px solid var(--border-color);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.export-table td {
+    padding: 12px 8px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: top;
+}
+
+.export-table .days-cell {
+    font-weight: 700;
+    color: var(--primary);
+    white-space: nowrap;
+    text-align: center;
+}
+
+.export-table .dates-cell {
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.export-table .dates-cell strong {
+    color: var(--primary);
+}
+
+.client-color-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+}

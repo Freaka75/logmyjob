@@ -236,13 +236,13 @@ function renderExportPreview() {
     const clients = Object.keys(summary).sort();
 
     if (clients.length === 0) {
-        preview.innerHTML = '<p class="empty-state">Aucune présence pour cette période</p>';
+        preview.innerHTML = '<p class="empty-state">Aucune presence pour cette periode</p>';
         totalDiv.innerHTML = '';
         return;
     }
 
     let html = '<table class="export-table"><thead><tr>';
-    html += '<th>Client</th><th>Jours</th><th>Détail</th>';
+    html += '<th>Client</th><th>Total</th><th>Dates travaillees</th>';
     html += '</tr></thead><tbody>';
 
     let grandTotal = 0;
@@ -252,60 +252,41 @@ function renderExportPreview() {
         const color = getClientColor(client);
         grandTotal += data.total;
 
-        const fullCount = data.fullDays.length;
-        const halfCount = data.halfDaysMorning.length + data.halfDaysAfternoon.length;
-
-        // Construire la liste des jours pour l'affichage compact
-        let allDays = [...data.fullDays];
-        data.halfDaysMorning.forEach(d => {
-            const dayNum = parseInt(d.split(' ')[0]);
-            if (!allDays.includes(dayNum)) allDays.push(dayNum);
-        });
-        data.halfDaysAfternoon.forEach(d => {
-            const dayNum = parseInt(d.split(' ')[0]);
-            if (!allDays.includes(dayNum)) allDays.push(dayNum);
-        });
-        allDays.sort((a, b) => a - b);
+        // Grouper par mois pour afficher les dates
+        const monthKeys = Object.keys(data.byMonth).sort();
+        let datesHtml = '';
         
-        let detail = '';
-        if (fullCount > 0) detail += `${fullCount} journee${fullCount > 1 ? 's' : ''}`;
-        if (halfCount > 0) {
-            if (detail) detail += ' + ';
-            detail += `${halfCount} demi-journee${halfCount > 1 ? 's' : ''}`;
-        }
-        
-        // Ajouter les jours du mois
-        if (allDays.length > 0) {
-            detail += `<br><span class="days-list">Jours : ${allDays.join(', ')}</span>`;
-        }
+        monthKeys.forEach((monthKey, idx) => {
+            const monthData = data.byMonth[monthKey];
+            const monthName = monthData.label.split(' ')[0]; // Juste le nom du mois
+            
+            // Collecter tous les jours du mois
+            let daysInfo = [];
+            
+            if (monthData.fullDays.length > 0) {
+                const days = monthData.fullDays.sort((a,b) => a-b);
+                daysInfo.push(days.join(', '));
+            }
+            if (monthData.halfDaysMorning.length > 0) {
+                const days = monthData.halfDaysMorning.sort((a,b) => a-b);
+                daysInfo.push(days.map(d => d + ' (AM)').join(', '));
+            }
+            if (monthData.halfDaysAfternoon.length > 0) {
+                const days = monthData.halfDaysAfternoon.sort((a,b) => a-b);
+                daysInfo.push(days.map(d => d + ' (PM)').join(', '));
+            }
+            
+            if (daysInfo.length > 0) {
+                if (idx > 0) datesHtml += '<br>';
+                datesHtml += `<strong>${monthName}:</strong> ${daysInfo.join(', ')}`;
+            }
+        });
 
         html += `<tr>`;
         html += `<td><span class="client-color-dot" style="background-color: ${color}"></span> ${client}</td>`;
-        html += `<td class="days-cell">${data.total}</td>`;
-        html += `<td>${detail}</td>`;
+        html += `<td class="days-cell">${data.total}j</td>`;
+        html += `<td class="dates-cell">${datesHtml}</td>`;
         html += `</tr>`;
-
-        // Détails par mois (toujours affiché si showDetailedExport)
-        if (showDetailedExport) {
-            const monthKeys = Object.keys(data.byMonth).sort();
-
-            monthKeys.forEach(monthKey => {
-                const monthData = data.byMonth[monthKey];
-                html += `<tr class="detail-row"><td colspan="3">`;
-                html += `<div class="month-detail-header">${monthData.label} - ${monthData.total} jour${monthData.total > 1 ? 's' : ''}</div>`;
-
-                if (monthData.fullDays.length > 0) {
-                    html += `<div class="detail-line">Journees completes : ${monthData.fullDays.sort((a,b) => a-b).join(', ')}</div>`;
-                }
-                if (monthData.halfDaysMorning.length > 0) {
-                    html += `<div class="detail-line">Demi-journees (matin) : ${monthData.halfDaysMorning.sort((a,b) => a-b).join(', ')}</div>`;
-                }
-                if (monthData.halfDaysAfternoon.length > 0) {
-                    html += `<div class="detail-line">Demi-journees (apres-midi) : ${monthData.halfDaysAfternoon.sort((a,b) => a-b).join(', ')}</div>`;
-                }
-                html += `</td></tr>`;
-            });
-        }
     });
 
     html += '</tbody></table>';
