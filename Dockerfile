@@ -1,37 +1,43 @@
 # Dockerfile pour Log My Job PWA
-# 100% localStorage - Pas de base de donnees serveur
+# Version Supabase - Frontend statique uniquement
 
-FROM python:3.11-slim
+FROM nginx:alpine
 
-# Variables d'environnement
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV FLASK_ENV=production
+# Copier le frontend
+COPY frontend/ /usr/share/nginx/html/
 
-# Installer les dependances systeme
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Creer le repertoire de travail
-WORKDIR /app
-
-# Copier et installer les dependances Python (cache layer)
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copier le code backend
-COPY backend/ ./backend/
-
-# Copier le code frontend
-COPY frontend/ ./frontend/
+# Configuration nginx personnalisee pour SPA
+RUN echo 'server { \
+    listen 80; \
+    server_name localhost; \
+    root /usr/share/nginx/html; \
+    index index.html; \
+    \
+    location / { \
+        try_files $uri $uri/ /index.html; \
+    } \
+    \
+    location /api/health { \
+        add_header Content-Type application/json; \
+        return 200 "{\"status\": \"ok\", \"storage\": \"supabase\"}"; \
+    } \
+    \
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ { \
+        expires 1y; \
+        add_header Cache-Control "public, immutable"; \
+    } \
+    \
+    location /sw.js { \
+        add_header Cache-Control "no-cache"; \
+        expires 0; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
 
 # Exposer le port
-EXPOSE 5000
+EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5000/api/health || exit 1
+    CMD wget --quiet --tries=1 --spider http://localhost/api/health || exit 1
 
-# Lancer l'application avec gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--chdir", "/app/backend", "app:app"]
+CMD ["nginx", "-g", "daemon off;"]

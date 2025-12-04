@@ -519,6 +519,20 @@
         </header>
 
         <div class="px-4 py-4 max-w-lg mx-auto space-y-4">
+            <!-- Compte utilisateur -->
+            <div class="bg-white rounded-2xl shadow-md p-4">
+                <h2 class="text-base font-semibold text-gray-800 mb-3">👤 Compte</h2>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div id="user-email" class="font-medium text-sm text-gray-800"></div>
+                        <div class="text-xs text-gray-500">Connecte via Supabase</div>
+                    </div>
+                    <button id="btn-logout" class="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-lg transition-colors">
+                        Deconnexion
+                    </button>
+                </div>
+            </div>
+
             <!-- Apparence / Dark Mode -->
             <div class="bg-white rounded-2xl shadow-md p-4">
                 <h2 class="text-base font-semibold text-gray-800 mb-3" data-i18n="appearance">🎨 Apparence</h2>
@@ -774,7 +788,11 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="js/storage.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
     <script src="js/translations.js"></script>
     <script src="js/app.js"></script>
     <script src="js/calendar.js"></script>
@@ -782,6 +800,16 @@
     <script src="js/export.js"></script>
     <script src="js/stats.js"></script>
     <script>
+        // Verifier l'authentification au chargement
+        (async function checkAuth() {
+            initSupabase();
+            const isAuth = await auth.isAuthenticated();
+            if (!isAuth) {
+                window.location.href = '/auth.html';
+                return;
+            }
+        })();
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')

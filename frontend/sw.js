@@ -1,9 +1,13 @@
-const CACHE_NAME = 'log-my-job-v34';
+const CACHE_NAME = 'log-my-job-v35';
 const urlsToCache = [
   '/',
   '/index.html',
+  '/auth.html',
   '/css/style.css',
-  '/js/storage.js',
+  '/js/config.js',
+  '/js/supabase-client.js',
+  '/js/auth.js',
+  '/js/api.js',
   '/js/translations.js',
   '/js/app.js',
   '/js/calendar.js',

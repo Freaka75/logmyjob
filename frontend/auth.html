@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#3b82f6">
+    <title>Log My Job - Connexion</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <link href="/css/style.css" rel="stylesheet">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        }
+
+        .auth-card {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 32px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .auth-logo {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .auth-logo h1 {
+            font-size: 28px;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .auth-logo p {
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .auth-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+
+        .auth-btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .auth-btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .auth-btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .auth-btn-secondary:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: var(--text-secondary);
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .auth-divider span {
+            padding: 0 12px;
+            font-size: 14px;
+        }
+
+        .auth-error {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .auth-success {
+            background: #dcfce7;
+            color: #16a34a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .forgot-password a {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 24px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid white;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <h1>Log My Job</h1>
+                <p>Suivi de presence client</p>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">Connexion</button>
+                <button class="auth-tab" data-tab="register">Inscription</button>
+            </div>
+
+            <div id="auth-error" class="auth-error"></div>
+            <div id="auth-success" class="auth-success"></div>
+
+            <!-- Formulaire de connexion -->
+            <form id="login-form" class="auth-form active">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Mot de passe</label>
+                    <input type="password" id="login-password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="auth-btn auth-btn-primary">
+                    Se connecter
+                </button>
+
+                <div class="auth-divider">
+                    <span>ou</span>
+                </div>
+
+                <button type="button" id="magic-link-btn" class="auth-btn auth-btn-secondary">
+                    Connexion par email (Magic Link)
+                </button>
+
+                <div class="forgot-password">
+                    <a href="#" id="forgot-password-link">Mot de passe oublie ?</a>
+                </div>
+            </form>
+
+            <!-- Formulaire d'inscription -->
+            <form id="register-form" class="auth-form">
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Mot de passe</label>
+                    <input type="password" id="register-password" required minlength="6" autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label for="register-confirm">Confirmer le mot de passe</label>
+                    <input type="password" id="register-confirm" required minlength="6" autocomplete="new-password">
+                </div>
+                <button type="submit" class="auth-btn auth-btn-primary">
+                    S'inscrire
+                </button>
+            </form>
+
+            <!-- Formulaire Magic Link -->
+            <form id="magic-link-form" class="auth-form">
+                <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 14px;">
+                    Entrez votre email et nous vous enverrons un lien de connexion.
+                </p>
+                <div class="form-group">
+                    <label for="magic-email">Email</label>
+                    <input type="email" id="magic-email" required autocomplete="email">
+                </div>
+                <button type="submit" class="auth-btn auth-btn-primary">
+                    Envoyer le lien
+                </button>
+                <button type="button" id="back-to-login" class="auth-btn auth-btn-secondary" style="margin-top: 8px;">
+                    Retour
+                </button>
+            </form>
+
+            <!-- Formulaire mot de passe oublie -->
+            <form id="forgot-form" class="auth-form">
+                <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 14px;">
+                    Entrez votre email pour reinitialiser votre mot de passe.
+                </p>
+                <div class="form-group">
+                    <label for="forgot-email">Email</label>
+                    <input type="email" id="forgot-email" required autocomplete="email">
+                </div>
+                <button type="submit" class="auth-btn auth-btn-primary">
+                    Reinitialiser
+                </button>
+                <button type="button" id="back-to-login-2" class="auth-btn auth-btn-secondary" style="margin-top: 8px;">
+                    Retour
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Donnees securisees avec Supabase</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/config.js"></script>
+    <script src="/js/supabase-client.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        // Initialiser Supabase
+        initSupabase();
+
+        // Elements
+        const tabs = document.querySelectorAll('.auth-tab');
+        const forms = document.querySelectorAll('.auth-form');
+        const errorDiv = document.getElementById('auth-error');
+        const successDiv = document.getElementById('auth-success');
+
+        // Verifier si deja connecte
+        (async () => {
+            const isAuth = await auth.isAuthenticated();
+            if (isAuth) {
+                window.location.href = '/';
+            }
+        })();
+
+        // Gestion des onglets
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                forms.forEach(f => f.classList.remove('active'));
+                document.getElementById(`${tabName}-form`).classList.add('active');
+
+                hideMessages();
+            });
+        });
+
+        // Fonctions utilitaires
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            successDiv.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+        }
+
+        function hideMessages() {
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+        }
+
+        function setLoading(form, loading) {
+            const btn = form.querySelector('button[type="submit"]');
+            if (loading) {
+                form.classList.add('loading');
+                btn.innerHTML = '<span class="spinner"></span>Chargement...';
+            } else {
+                form.classList.remove('loading');
+                btn.innerHTML = btn.dataset.originalText || 'Valider';
+            }
+        }
+
+        // Formulaire de connexion
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const form = e.target;
+            const btn = form.querySelector('button[type="submit"]');
+            btn.dataset.originalText = btn.textContent;
+
+            setLoading(form, true);
+
+            try {
+                await auth.signIn(email, password);
+                window.location.href = '/';
+            } catch (error) {
+                showError(error.message || 'Erreur de connexion');
+                setLoading(form, false);
+            }
+        });
+
+        // Formulaire d'inscription
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const confirm = document.getElementById('register-confirm').value;
+            const form = e.target;
+            const btn = form.querySelector('button[type="submit"]');
+            btn.dataset.originalText = btn.textContent;
+
+            if (password !== confirm) {
+                showError('Les mots de passe ne correspondent pas');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('Le mot de passe doit contenir au moins 6 caracteres');
+                return;
+            }
+
+            setLoading(form, true);
+
+            try {
+                await auth.signUp(email, password);
+                showSuccess('Inscription reussie ! Verifiez votre email pour confirmer votre compte.');
+                setLoading(form, false);
+            } catch (error) {
+                showError(error.message || 'Erreur lors de l\'inscription');
+                setLoading(form, false);
+            }
+        });
+
+        // Magic Link
+        document.getElementById('magic-link-btn').addEventListener('click', () => {
+            forms.forEach(f => f.classList.remove('active'));
+            document.getElementById('magic-link-form').classList.add('active');
+            tabs.forEach(t => t.classList.remove('active'));
+            hideMessages();
+        });
+
+        document.getElementById('magic-link-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const email = document.getElementById('magic-email').value;
+            const form = e.target;
+            const btn = form.querySelector('button[type="submit"]');
+            btn.dataset.originalText = btn.textContent;
+
+            setLoading(form, true);
+
+            try {
+                await auth.signInWithMagicLink(email);
+                showSuccess('Email envoye ! Cliquez sur le lien dans votre email pour vous connecter.');
+                setLoading(form, false);
+            } catch (error) {
+                showError(error.message || 'Erreur lors de l\'envoi');
+                setLoading(form, false);
+            }
+        });
+
+        document.getElementById('back-to-login').addEventListener('click', () => {
+            forms.forEach(f => f.classList.remove('active'));
+            document.getElementById('login-form').classList.add('active');
+            tabs[0].classList.add('active');
+            hideMessages();
+        });
+
+        // Mot de passe oublie
+        document.getElementById('forgot-password-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            forms.forEach(f => f.classList.remove('active'));
+            document.getElementById('forgot-form').classList.add('active');
+            tabs.forEach(t => t.classList.remove('active'));
+            hideMessages();
+        });
+
+        document.getElementById('forgot-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const email = document.getElementById('forgot-email').value;
+            const form = e.target;
+            const btn = form.querySelector('button[type="submit"]');
+            btn.dataset.originalText = btn.textContent;
+
+            setLoading(form, true);
+
+            try {
+                await auth.resetPassword(email);
+                showSuccess('Email de reinitialisation envoye ! Verifiez votre boite de reception.');
+                setLoading(form, false);
+            } catch (error) {
+                showError(error.message || 'Erreur lors de l\'envoi');
+                setLoading(form, false);
+            }
+        });
+
+        document.getElementById('back-to-login-2').addEventListener('click', () => {
+            forms.forEach(f => f.classList.remove('active'));
+            document.getElementById('login-form').classList.add('active');
+            tabs[0].classList.add('active');
+            hideMessages();
+        });
+
+        // Ecouter les changements d'auth (pour magic link)
+        auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                window.location.href = '/';
+            }
+        });
+    </script>
+</body>
+</html>

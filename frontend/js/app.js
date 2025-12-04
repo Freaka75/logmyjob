@@ -1,7 +1,7 @@
 // ============ APPLICATION LOG MY JOB ============
-// Stockage 100% localStorage - Fonctionne offline
+// Stockage via Supabase - Authentification requise
 
-// État global
+// Etat global
 let currentPage = 'home';
 let allPresences = [];
 let allClients = [];
@@ -19,7 +19,7 @@ let selectedPresences = new Set();
 let notificationSettings = {
     enabled: false,
     time: '18:00',
-    weekdays: [1, 2, 3, 4, 5] // Lun-Ven par défaut
+    weekdays: [1, 2, 3, 4, 5]
 };
 let assistantSettings = {
     email: '',
@@ -27,25 +27,40 @@ let assistantSettings = {
     message: ''
 };
 
-// Couleurs des clients (stockées en localStorage)
+// Couleurs des clients
 let clientColors = {};
 const DEFAULT_COLORS = [
-    '#2563eb', // Bleu
-    '#10b981', // Vert
-    '#f59e0b', // Orange
-    '#ef4444', // Rouge
-    '#8b5cf6', // Violet
-    '#ec4899', // Rose
-    '#06b6d4', // Cyan
-    '#84cc16', // Lime
-    '#f97316', // Orange foncé
-    '#6366f1', // Indigo
-    '#14b8a6', // Teal
-    '#a855f7'  // Purple
+    '#2563eb', '#10b981', '#f59e0b', '#ef4444',
+    '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16',
+    '#f97316', '#6366f1', '#14b8a6', '#a855f7'
 ];
 
 // Initialisation
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Verifier l'authentification
+    const isAuth = await auth.isAuthenticated();
+    if (!isAuth) {
+        window.location.href = '/auth.html';
+        return;
+    }
+
+    // Afficher l'email utilisateur
+    const user = await auth.getCurrentUser();
+    const userEmailEl = document.getElementById('user-email');
+    if (userEmailEl && user) {
+        userEmailEl.textContent = user.email;
+    }
+
+    // Initialiser le bouton de deconnexion
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            if (confirm('Voulez-vous vraiment vous deconnecter ?')) {
+                await auth.signOut();
+            }
+        });
+    }
+
     initLanguageButtons();
     initDarkMode();
     initPWAInstall();
@@ -56,9 +71,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initNotifications();
     initAssistant();
     initBackup();
-    loadClientColors();
-    loadData();
-    loadVacations();
+
+    await loadData();
+    await loadVacations();
     loadNotificationSettings();
     loadAssistantSettings();
     checkCurrentVacation();
@@ -85,20 +100,12 @@ function initLanguageButtons() {
         });
     }
 
-    // Update UI on language change event
     window.addEventListener('languageChanged', () => {
-        // Refresh dynamic content
         updateMonthWidget();
         loadRecentPresences();
-        if (typeof renderCalendar === 'function') {
-            renderCalendar();
-        }
-        if (typeof loadHistory === 'function') {
-            loadHistory();
-        }
-        if (typeof updateStats === 'function') {
-            updateStats();
-        }
+        if (typeof renderCalendar === 'function') renderCalendar();
+        if (typeof loadHistory === 'function') loadHistory();
+        if (typeof updateStats === 'function') updateStats();
     });
 }
 
@@ -116,17 +123,14 @@ function saveClientColors() {
 }
 
 function getClientColor(clientName) {
-    // Si le client a une couleur assignée, la retourner
     if (clientColors[clientName]) {
         return clientColors[clientName];
     }
 
-    // Sinon, assigner une couleur par défaut basée sur l'index
     const clientIndex = allClients.indexOf(clientName);
     const colorIndex = clientIndex >= 0 ? clientIndex % DEFAULT_COLORS.length : 0;
     const color = DEFAULT_COLORS[colorIndex];
 
-    // Sauvegarder pour cohérence future
     clientColors[clientName] = color;
     saveClientColors();
 
@@ -137,7 +141,6 @@ function setClientColor(clientName, color) {
     clientColors[clientName] = color;
     saveClientColors();
 
-    // Rafraîchir les vues si nécessaire
     if (currentPage === 'calendar') {
         initCalendar();
     } else if (currentPage === 'history') {
@@ -154,7 +157,7 @@ function renderClientColorsList() {
     container.innerHTML = '';
 
     if (allClients.length === 0) {
-        container.innerHTML = '<p class="empty-hint">Aucun client enregistré</p>';
+        container.innerHTML = '<p class="empty-hint">Aucun client enregistre</p>';
         return;
     }
 
@@ -194,17 +197,14 @@ function initNavigation() {
 }
 
 function navigateTo(page) {
-    // Désactiver toutes les pages et nav items
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
-    // Activer la page et nav item sélectionnés
     document.getElementById(`page-${page}`).classList.add('active');
     document.querySelector(`[data-page="${page}"]`).classList.add('active');
 
     currentPage = page;
 
-    // Charger les donnees specifiques a la page
     if (page === 'calendar') {
         initCalendar();
     } else if (page === 'stats') {
@@ -215,7 +215,6 @@ function navigateTo(page) {
         initHistoryPage();
         renderHistoryView();
     } else if (page === 'settings') {
-        renderVacationsList();
         renderClientColorsList();
     }
 }
@@ -235,12 +234,11 @@ function initFormHandlers() {
 
     btnCancel.addEventListener('click', hideForm);
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        savePresence();
+        await savePresence();
     });
 
-    // Gérer la sélection client vs input libre
     clientSelect.addEventListener('change', () => {
         if (clientSelect.value) {
             clientInput.value = '';
@@ -253,7 +251,6 @@ function initFormHandlers() {
         }
     });
 
-    // Boutons de sélection rapide de date
     initQuickDateButtons();
 }
 
@@ -267,13 +264,11 @@ function initQuickDateButtons() {
             const date = getQuickDate(dateType);
             dateInput.value = date;
 
-            // Mettre à jour l'état actif des boutons
             quickDateButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         });
     });
 
-    // Quand l'utilisateur change la date manuellement, désactiver les boutons
     dateInput.addEventListener('change', () => {
         const currentDate = dateInput.value;
         quickDateButtons.forEach(btn => {
@@ -323,11 +318,10 @@ function showForm(editData = null) {
     const form = document.getElementById('presence-form');
 
     if (editData) {
-        formTitle.textContent = 'Modifier la présence';
+        formTitle.textContent = 'Modifier la presence';
         document.getElementById('edit-id').value = editData.id;
         document.getElementById('date').value = editData.date;
 
-        // Essayer de sélectionner le client existant
         const clientSelect = document.getElementById('client-select');
         const option = Array.from(clientSelect.options).find(opt => opt.value === editData.client);
         if (option) {
@@ -342,15 +336,13 @@ function showForm(editData = null) {
         document.getElementById('notes').value = editData.notes || '';
         currentEditId = editData.id;
     } else {
-        formTitle.textContent = 'Nouvelle présence';
+        formTitle.textContent = 'Nouvelle presence';
         form.reset();
         document.getElementById('date').value = getTodayDate();
         currentEditId = null;
     }
 
-    // Mettre à jour les boutons de date rapide
     updateQuickDateButtonsState();
-
     formContainer.style.display = 'block';
     formContainer.scrollIntoView({ behavior: 'smooth' });
 }
@@ -376,7 +368,7 @@ function hideForm() {
     currentEditId = null;
 }
 
-function savePresence() {
+async function savePresence() {
     const date = document.getElementById('date').value;
     const clientSelect = document.getElementById('client-select').value;
     const clientInput = document.getElementById('client-input').value;
@@ -391,55 +383,55 @@ function savePresence() {
 
     const data = { date, client, duree, notes };
 
-    let result;
-    if (currentEditId) {
-        result = updateDay(currentEditId, data);
-    } else {
-        result = saveDay(data);
-    }
+    try {
+        let result;
+        if (currentEditId) {
+            result = await api.updateDay(currentEditId, data);
+        } else {
+            result = await api.addDay(data);
+        }
 
-    if (result.success) {
-        showToast(currentEditId ? 'Jour mis a jour' : 'Jour enregistre', 'success');
-        hideForm();
-        loadData();
-        // Trigger auto-backup if enabled
-        triggerAutoBackup();
-    } else {
-        showToast(result.error || 'Erreur lors de l\'enregistrement', 'error');
+        if (result.success) {
+            showToast(currentEditId ? 'Jour mis a jour' : 'Jour enregistre', 'success');
+            hideForm();
+            await loadData();
+        }
+    } catch (error) {
+        console.error('Erreur sauvegarde:', error);
+        showToast(error.message || 'Erreur lors de l\'enregistrement', 'error');
     }
 }
 
-function deletePresence(id) {
+async function deletePresence(id) {
     if (!confirm('Supprimer ce jour ?')) return;
 
-    const result = deleteDay(id);
-
-    if (result.success) {
+    try {
+        await api.deleteDay(id);
         showToast('Jour supprime', 'success');
-        loadData();
-    } else {
+        await loadData();
+    } catch (error) {
+        console.error('Erreur suppression:', error);
         showToast('Erreur lors de la suppression', 'error');
     }
 }
 
-// Chargement des données depuis localStorage
-function loadData() {
-    // Charger toutes les presences depuis localStorage
-    allPresences = getAllDays();
+// Chargement des donnees depuis Supabase
+async function loadData() {
+    try {
+        // Charger toutes les presences
+        allPresences = await api.getAllDays();
 
-    // Trier par date decroissante
-    allPresences.sort((a, b) => b.date.localeCompare(a.date));
+        // Charger les clients
+        allClients = await api.getClients();
 
-    // Charger les clients depuis localStorage
-    allClients = getAllClients();
+        // Charger les couleurs depuis localStorage
+        loadClientColors();
 
-    // Si pas de clients, les synchroniser depuis les jours
-    if (allClients.length === 0 && allPresences.length > 0) {
-        syncClientsFromDays();
-        allClients = getAllClients();
+        updateUI();
+    } catch (error) {
+        console.error('Erreur chargement donnees:', error);
+        showToast('Erreur de chargement des donnees', 'error');
     }
-
-    updateUI();
 }
 
 function updateUI() {
@@ -454,7 +446,7 @@ function updateUI() {
 
 function updateClientSelect() {
     const select = document.getElementById('client-select');
-    select.innerHTML = '<option value="">-- Sélectionner --</option>';
+    select.innerHTML = '<option value="">-- Selectionner --</option>';
 
     allClients.forEach(client => {
         const option = document.createElement('option');
@@ -470,11 +462,9 @@ function updateMonthWidget() {
 
     const monthPresences = allPresences.filter(p => p.date.startsWith(currentMonth));
 
-    // Calculer le total de jours
     const totalDays = calculateTotalDays(monthPresences);
     document.getElementById('month-total').textContent = totalDays.toFixed(1);
 
-    // Breakdown par client
     const clientStats = {};
     monthPresences.forEach(p => {
         if (!clientStats[p.client]) clientStats[p.client] = 0;
@@ -490,9 +480,8 @@ function updateMonthWidget() {
         clientBreakdown.appendChild(div);
     });
 
-    // Mettre à jour le label du mois
-    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-                        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
+                        'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
     document.getElementById('current-month-label').textContent = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
 }
 
@@ -503,7 +492,7 @@ function updateRecentDays() {
     const recent = allPresences.slice(0, 5);
 
     if (recent.length === 0) {
-        recentList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Aucun jour enregistré</p>';
+        recentList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Aucun jour enregistre</p>';
         return;
     }
 
@@ -534,25 +523,17 @@ function editPresence(id) {
     }
 }
 
-// Historique et filtres (LEGACY - remplacé par history.js)
+// Filtres
 function initFilters() {
-    // Ces éléments n'existent plus avec la nouvelle page historique
-    // La fonction est maintenant dans history.js (initHistoryFilters)
-    // On garde cette fonction vide pour éviter les erreurs
+    // Gere dans history.js
 }
 
 function updateFilterSelects() {
-    // LEGACY - Ces éléments n'existent plus avec la nouvelle page historique
-    // La logique est maintenant dans history.js
     const filterMonth = document.getElementById('filter-month');
     const filterClient = document.getElementById('filter-client');
 
-    // Si les éléments n'existent pas, on sort (nouvelle page historique)
-    if (!filterMonth || !filterClient) {
-        return;
-    }
+    if (!filterMonth || !filterClient) return;
 
-    // Code legacy pour compatibilité (si les éléments existent)
     const months = [...new Set(allPresences.map(p => p.date.substring(0, 7)))].sort().reverse();
     const currentValue = filterMonth.value;
     filterMonth.innerHTML = '<option value="">Tous</option>';
@@ -576,136 +557,10 @@ function updateFilterSelects() {
 }
 
 function renderHistory() {
-    // LEGACY - La nouvelle page historique utilise history.js
-    // Vérifier si les anciens éléments existent
-    const historyList = document.getElementById('history-list');
-    const historyCount = document.getElementById('history-count');
-
-    // Si les éléments n'existent pas, on utilise la nouvelle page (history.js)
-    if (!historyList || !historyCount) {
-        // Appeler la fonction de history.js si disponible
-        if (typeof renderHistoryView === 'function') {
-            renderHistoryView();
-        }
-        return;
-    }
-
-    // Code legacy ci-dessous (pour compatibilité)
-    let filtered = [...allPresences];
-
-    if (currentFilter.month) {
-        filtered = filtered.filter(p => p.date.startsWith(currentFilter.month));
-    }
-    if (currentFilter.client) {
-        filtered = filtered.filter(p => p.client === currentFilter.client);
-    }
-    if (currentSearchTerm) {
-        filtered = filtered.filter(p =>
-            p.client.toLowerCase().includes(currentSearchTerm) ||
-            p.date.includes(currentSearchTerm) ||
-            (p.notes && p.notes.toLowerCase().includes(currentSearchTerm))
-        );
-    }
-
-    const totalDays = calculateTotalDays(filtered);
-    historyCount.textContent = `${totalDays.toFixed(1)} jours (${filtered.length} entrées)`;
-
-    const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-    const start = (currentHistoryPage - 1) * ITEMS_PER_PAGE;
-    const end = start + ITEMS_PER_PAGE;
-    const paged = filtered.slice(start, end);
-
-    historyList.innerHTML = '';
-
-    if (paged.length === 0) {
-        historyList.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">Aucun résultat</p>';
-        const pagination = document.getElementById('pagination');
-        if (pagination) pagination.innerHTML = '';
-        return;
-    }
-
-    paged.forEach(presence => {
-        const div = document.createElement('div');
-        div.className = 'day-item';
-        div.innerHTML = `
-            <div class="day-info">
-                <div class="day-date">${formatDate(presence.date)}</div>
-                <div class="day-client">${presence.client}</div>
-                <div class="day-duration">${formatDuration(presence.duree)}</div>
-                ${presence.notes ? `<div class="day-notes">${presence.notes}</div>` : ''}
-            </div>
-            <div class="day-actions">
-                <button class="btn-primary btn-small" onclick="editPresence('${presence.id}')">✏️</button>
-                <button class="btn-danger btn-small" onclick="deletePresence('${presence.id}')">🗑️</button>
-            </div>
-        `;
-        historyList.appendChild(div);
-    });
-
-    renderPagination(totalPages);
-}
-
-function renderPagination(totalPages) {
-    const pagination = document.getElementById('pagination');
-    if (!pagination) return;
-
-    pagination.innerHTML = '';
-
-    if (totalPages <= 1) return;
-
-    for (let i = 1; i <= totalPages; i++) {
-        const button = document.createElement('button');
-        button.textContent = i;
-        button.className = i === currentHistoryPage ? 'active' : '';
-        button.addEventListener('click', () => {
-            currentHistoryPage = i;
-            renderHistory();
-        });
-        pagination.appendChild(button);
+    if (typeof renderHistoryView === 'function') {
+        renderHistoryView();
     }
 }
-
-// Stats - Calculees depuis localStorage
-function loadStats() {
-    const stats = getMonthlyStats();
-
-    const container = document.getElementById('stats-container');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    if (Object.keys(stats).length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">Aucune donnee</p>';
-        return;
-    }
-
-    Object.entries(stats).sort((a, b) => b[0].localeCompare(a[0])).forEach(([month, data]) => {
-        const div = document.createElement('div');
-        div.className = 'stats-month';
-
-        let clientsHTML = '';
-        Object.entries(data.clients).forEach(([client, days]) => {
-            clientsHTML += `
-                <div class="stats-client-item">
-                    <span class="stats-client-name">${client}</span>
-                    <span class="stats-client-days">${days.toFixed(1)} jours</span>
-                </div>
-            `;
-        });
-
-        div.innerHTML = `
-            <h3>
-                <span>${formatMonth(month)}</span>
-                <span class="stats-total">${data.total.toFixed(1)} jours</span>
-            </h3>
-            <div class="stats-clients">${clientsHTML}</div>
-        `;
-        container.appendChild(div);
-    });
-}
-
-// Export - Les fonctions d'export sont maintenant dans export.js
-// initExport() est appelée depuis export.js
 
 // Utilitaires
 function getTodayDate() {
@@ -716,24 +571,24 @@ function getTodayDate() {
 function formatDate(dateStr) {
     const date = new Date(dateStr + 'T00:00:00');
     const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-    const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'aoû', 'sep', 'oct', 'nov', 'déc'];
+    const months = ['jan', 'fev', 'mar', 'avr', 'mai', 'juin', 'juil', 'aou', 'sep', 'oct', 'nov', 'dec'];
     return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 function formatMonth(monthStr) {
     const [year, month] = monthStr.split('-');
-    const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-                    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    const months = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
+                    'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
     return `${months[parseInt(month) - 1]} ${year}`;
 }
 
 function formatDuration(duree) {
     const map = {
-        'journee_complete': 'Journée complète (1j)',
+        'journee_complete': 'Journee complete (1j)',
         'demi_journee_matin': 'Matin (0.5j)',
-        'demi_journee_aprem': 'Après-midi (0.5j)',
-        '1.0': 'Journée complète (1j)',
-        '0.5': 'Demi-journée (0.5j)'
+        'demi_journee_aprem': 'Apres-midi (0.5j)',
+        '1.0': 'Journee complete (1j)',
+        '0.5': 'Demi-journee (0.5j)'
     };
     return map[duree] || duree;
 }
@@ -758,7 +613,7 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// ============ GESTION DES CONGÉS ============
+// ============ GESTION DES CONGES ============
 
 function initVacations() {
     const btnAdd = document.getElementById('btn-add-vacation');
@@ -768,9 +623,7 @@ function initVacations() {
     const cancelBtn = document.getElementById('vacation-cancel');
     const form = document.getElementById('vacation-form');
 
-    // Bouton dans parametres
     if (btnAdd) btnAdd.addEventListener('click', () => showVacationModal());
-    // Bouton sur page accueil
     if (btnAddHome) btnAddHome.addEventListener('click', () => showVacationModal());
 
     modalClose.addEventListener('click', () => hideVacationModal());
@@ -780,26 +633,18 @@ function initVacations() {
         if (e.target === modal) hideVacationModal();
     });
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        saveVacation();
+        await saveVacation();
     });
 }
 
-function loadVacations() {
-    // Utiliser storage.js pour charger les vacations
-    vacations = getAllVacations();
-}
-
-function saveVacationsToStorage() {
-    localStorage.setItem('vacations', JSON.stringify(vacations));
-
-    // Informer le Service Worker des changements de congés
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-            type: 'UPDATE_VACATIONS',
-            vacations: vacations
-        });
+async function loadVacations() {
+    try {
+        vacations = await api.getHolidays();
+    } catch (error) {
+        console.error('Erreur chargement conges:', error);
+        vacations = [];
     }
 }
 
@@ -809,13 +654,13 @@ function showVacationModal(vacation = null) {
     const form = document.getElementById('vacation-form');
 
     if (vacation) {
-        title.textContent = 'Modifier les congés';
+        title.textContent = 'Modifier les conges';
         document.getElementById('vacation-edit-id').value = vacation.id;
         document.getElementById('vacation-start').value = vacation.dateDebut;
         document.getElementById('vacation-end').value = vacation.dateFin;
         document.getElementById('vacation-type').value = vacation.type;
     } else {
-        title.textContent = 'Ajouter des congés';
+        title.textContent = 'Ajouter des conges';
         form.reset();
         document.getElementById('vacation-edit-id').value = '';
     }
@@ -828,21 +673,19 @@ function hideVacationModal() {
     modal.style.display = 'none';
 }
 
-function saveVacation() {
+async function saveVacation() {
     const editId = document.getElementById('vacation-edit-id').value;
     const dateDebut = document.getElementById('vacation-start').value;
     const dateFin = document.getElementById('vacation-end').value;
     const type = document.getElementById('vacation-type').value;
 
-    // Validation
     if (new Date(dateFin) < new Date(dateDebut)) {
-        showToast('La date de fin doit être >= à la date de début', 'error');
+        showToast('La date de fin doit etre >= a la date de debut', 'error');
         return;
     }
 
-    // Vérifier chevauchement
     const hasOverlap = vacations.some(v => {
-        if (editId && v.id === editId) return false; // Ignorer si édition
+        if (editId && String(v.id) === String(editId)) return false;
 
         const vStart = new Date(v.dateDebut);
         const vEnd = new Date(v.dateFin);
@@ -853,115 +696,64 @@ function saveVacation() {
     });
 
     if (hasOverlap) {
-        showToast('Cette période chevauche une période existante', 'error');
+        showToast('Cette periode chevauche une periode existante', 'error');
         return;
     }
 
-    if (editId) {
-        // Modification
-        const index = vacations.findIndex(v => v.id === editId);
-        if (index !== -1) {
-            vacations[index] = {
-                ...vacations[index],
-                dateDebut,
-                dateFin,
-                type
-            };
+    try {
+        if (editId) {
+            await api.updateHoliday(editId, { dateDebut, dateFin, type });
+        } else {
+            await api.addHoliday({ dateDebut, dateFin, type });
         }
-    } else {
-        // Nouveau
-        const vacation = {
-            id: Date.now().toString(),
-            dateDebut,
-            dateFin,
-            type,
-            createdAt: new Date().toISOString()
-        };
-        vacations.push(vacation);
-    }
 
-    saveVacationsToStorage();
-    renderVacationsList();
-    checkCurrentVacation();
-    hideVacationModal();
-    showToast(editId ? 'Congés modifiés' : 'Congés ajoutés', 'success');
+        await loadVacations();
+        checkCurrentVacation();
+        hideVacationModal();
+        showToast(editId ? 'Conges modifies' : 'Conges ajoutes', 'success');
 
-    // Rafraîchir le calendrier si on est sur cette page
-    if (currentPage === 'calendar') {
-        renderCalendar();
+        if (currentPage === 'calendar') {
+            renderCalendar();
+        }
+    } catch (error) {
+        console.error('Erreur sauvegarde conges:', error);
+        showToast('Erreur lors de la sauvegarde', 'error');
     }
 }
 
-function deleteVacation(id, skipConfirm = false) {
+async function deleteVacation(id, skipConfirm = false) {
     if (!skipConfirm && !confirm('Supprimer cette periode de conges ?')) return;
 
-    vacations = vacations.filter(v => v.id !== id && String(v.id) !== String(id));
-    saveVacationsToStorage();
-    renderVacationsList();
-    checkCurrentVacation();
+    try {
+        await api.deleteHoliday(id);
+        await loadVacations();
+        checkCurrentVacation();
 
-    // Rafraîchir le calendrier si on est sur cette page
-    if (currentPage === 'calendar') {
-        renderCalendar();
+        if (currentPage === 'calendar') {
+            renderCalendar();
+        }
+
+        showToast('Conges supprimes', 'success');
+    } catch (error) {
+        console.error('Erreur suppression conges:', error);
+        showToast('Erreur lors de la suppression', 'error');
     }
 }
 
-// Fonction pour editer un conge depuis le calendrier
 function editVacation(id) {
     const vacation = vacations.find(v => String(v.id) === String(id));
     if (vacation) {
-        // Fermer le modal des details du jour
         const dayModal = document.getElementById('day-details-modal');
         if (dayModal) dayModal.style.display = 'none';
-
-        // Ouvrir le modal de modification
         showVacationModal(vacation);
     }
 }
 
-function renderVacationsList() {
-    const container = document.getElementById('vacations-list');
-    container.innerHTML = '';
-
-    if (vacations.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px;">Aucune période de congés enregistrée</p>';
-        return;
-    }
-
-    // Trier par date (plus récent en premier)
-    const sorted = [...vacations].sort((a, b) => new Date(b.dateDebut) - new Date(a.dateDebut));
-
-    sorted.forEach(vacation => {
-        const item = document.createElement('div');
-        item.className = 'vacation-item';
-
-        const isActive = isVacationActive(vacation);
-        const typeLabel = getVacationType(vacation.type);
-        const typeIcon = getVacationIcon(vacation.type);
-
-        item.innerHTML = `
-            <div class="vacation-info">
-                <span class="vacation-icon">${typeIcon}</span>
-                <div class="vacation-details">
-                    <div class="vacation-type">${typeLabel}</div>
-                    <div class="vacation-dates">
-                        ${formatDate(vacation.dateDebut)} → ${formatDate(vacation.dateFin)}
-                    </div>
-                </div>
-                ${isActive ? '<span class="vacation-badge">En cours</span>' : ''}
-            </div>
-            <button class="btn-danger btn-small" onclick="deleteVacation('${vacation.id}')">✕</button>
-        `;
-
-        container.appendChild(item);
-    });
-}
-
 function getVacationType(type) {
     const types = {
-        'conges': 'Congés',
+        'conges': 'Conges',
         'rtt': 'RTT',
-        'ferie': 'Férié',
+        'ferie': 'Ferie',
         'autre': 'Autre'
     };
     return types[type] || type;
@@ -994,7 +786,7 @@ function checkCurrentVacation() {
     if (activeVacation) {
         const icon = getVacationIcon(activeVacation.type);
         const typeLabel = getVacationType(activeVacation.type);
-        bannerText.textContent = `${icon} Vous êtes en ${typeLabel.toLowerCase()} jusqu'au ${formatDate(activeVacation.dateFin)}`;
+        bannerText.textContent = `${icon} Vous etes en ${typeLabel.toLowerCase()} jusqu'au ${formatDate(activeVacation.dateFin)}`;
         banner.style.display = 'flex';
     } else {
         banner.style.display = 'none';
@@ -1015,7 +807,6 @@ function initNotifications() {
     const btnTest = document.getElementById('btn-test-notification');
     const warning = document.getElementById('notification-warning');
 
-    // Afficher avertissement si pas sur localhost (mobile via IP)
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (!isLocalhost && warning) {
         warning.style.display = 'flex';
@@ -1023,7 +814,6 @@ function initNotifications() {
 
     toggle.addEventListener('change', async () => {
         if (toggle.checked) {
-            // Demander permission si pas encore accordée
             const permission = await requestNotificationPermission();
             if (permission === 'granted') {
                 notificationSettings.enabled = true;
@@ -1032,7 +822,7 @@ function initNotifications() {
                 scheduleNotifications();
             } else {
                 toggle.checked = false;
-                showToast('Permission de notifications refusée', 'error');
+                showToast('Permission de notifications refusee', 'error');
             }
         } else {
             notificationSettings.enabled = false;
@@ -1067,7 +857,7 @@ function initNotifications() {
 
 async function requestNotificationPermission() {
     if (!('Notification' in window)) {
-        showToast('Les notifications ne sont pas supportées', 'error');
+        showToast('Les notifications ne sont pas supportees', 'error');
         return 'denied';
     }
 
@@ -1089,7 +879,6 @@ function loadNotificationSettings() {
         notificationSettings = JSON.parse(saved);
     }
 
-    // Appliquer à l'interface
     const toggle = document.getElementById('notifications-enabled');
     const config = document.getElementById('notifications-config');
     const timeInput = document.getElementById('notification-time');
@@ -1098,7 +887,6 @@ function loadNotificationSettings() {
     config.style.display = notificationSettings.enabled ? 'block' : 'none';
     timeInput.value = notificationSettings.time;
 
-    // Cocher les jours
     const weekdayCheckboxes = document.querySelectorAll('.weekday-item input[type="checkbox"]');
     weekdayCheckboxes.forEach(checkbox => {
         checkbox.checked = notificationSettings.weekdays.includes(parseInt(checkbox.value));
@@ -1108,7 +896,6 @@ function loadNotificationSettings() {
 function saveNotificationSettings() {
     localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
 
-    // Informer le Service Worker
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({
             type: 'UPDATE_NOTIFICATION_SETTINGS',
@@ -1131,38 +918,33 @@ async function sendTestNotification() {
     const permission = await requestNotificationPermission();
 
     if (permission !== 'granted') {
-        showToast('Permission de notifications refusée', 'error');
+        showToast('Permission de notifications refusee', 'error');
         return;
     }
 
     if ('serviceWorker' in navigator && 'showNotification' in ServiceWorkerRegistration.prototype) {
         navigator.serviceWorker.ready.then(registration => {
-            registration.showNotification('Tracker Présence', {
-                body: 'N\'oublie pas de logger ta journée client !',
+            registration.showNotification('Log My Job', {
+                body: 'N\'oublie pas de logger ta journee client !',
                 icon: '/icons/icon-192x192.png',
                 badge: '/icons/icon-72x72.png',
                 tag: 'test-notification',
                 requireInteraction: false,
                 vibrate: [200, 100, 200],
-                data: {
-                    url: '/'
-                }
+                data: { url: '/' }
             });
         });
-        showToast('Notification de test envoyée', 'success');
+        showToast('Notification de test envoyee', 'success');
     } else {
-        // Fallback pour navigateurs qui ne supportent pas les service worker notifications
-        new Notification('Tracker Présence', {
-            body: 'N\'oublie pas de logger ta journée client !',
+        new Notification('Log My Job', {
+            body: 'N\'oublie pas de logger ta journee client !',
             icon: '/icons/icon-192x192.png'
         });
-        showToast('Notification de test envoyée', 'success');
+        showToast('Notification de test envoyee', 'success');
     }
 }
 
 function scheduleNotifications() {
-    // La planification réelle se fait dans le Service Worker
-    // On envoie juste les paramètres mis à jour
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({
             type: 'SCHEDULE_NOTIFICATIONS',
@@ -1184,7 +966,6 @@ function cancelNotifications() {
 
 function initAssistant() {
     const btnSave = document.getElementById('btn-save-assistant');
-
     btnSave.addEventListener('click', () => {
         saveAssistantSettings();
     });
@@ -1196,7 +977,6 @@ function loadAssistantSettings() {
         assistantSettings = JSON.parse(saved);
     }
 
-    // Appliquer à l'interface
     document.getElementById('assistant-email').value = assistantSettings.email || '';
     document.getElementById('assistant-name').value = assistantSettings.name || '';
     document.getElementById('assistant-message').value = assistantSettings.message || '';
@@ -1236,13 +1016,11 @@ function initBackup() {
         btnReset.addEventListener('click', resetAllData);
     }
 
-    // Auto-backup toggle
     if (autoBackupToggle) {
-        // Load saved state
-        autoBackupToggle.checked = isAutoBackupEnabled();
+        autoBackupToggle.checked = localStorage.getItem('autoBackupEnabled') === 'true';
 
         autoBackupToggle.addEventListener('change', () => {
-            setAutoBackupEnabled(autoBackupToggle.checked);
+            localStorage.setItem('autoBackupEnabled', autoBackupToggle.checked);
             if (autoBackupToggle.checked) {
                 showToast('Sauvegarde auto activee', 'success');
             } else {
@@ -1252,16 +1030,14 @@ function initBackup() {
     }
 }
 
-function backupData() {
+async function backupData() {
     const status = document.getElementById('backup-status');
     status.className = 'backup-status info';
     status.textContent = 'Preparation de la sauvegarde...';
 
     try {
-        // Exporter toutes les donnees depuis localStorage
-        const backup = exportAllData();
+        const backup = await api.exportAllData();
 
-        // Telecharger le fichier
         const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -1282,7 +1058,7 @@ function backupData() {
     }
 }
 
-function handleRestoreFile(event) {
+async function handleRestoreFile(event) {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -1291,30 +1067,24 @@ function handleRestoreFile(event) {
     status.textContent = 'Lecture du fichier...';
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
         try {
             const backup = JSON.parse(e.target.result);
 
-            // Validation du format (supporte v1 et v2)
             const hasV2Data = backup.data && backup.data.days;
             const hasV1Data = backup.data && backup.data.presences;
-            const hasLegacyData = backup.presences;
 
-            if (!hasV2Data && !hasV1Data && !hasLegacyData) {
+            if (!hasV2Data && !hasV1Data) {
                 throw new Error('Format de sauvegarde invalide');
             }
 
-            // Compter les presences selon le format
             let presenceCount = 0;
             if (hasV2Data) {
                 presenceCount = backup.data.days.length;
             } else if (hasV1Data) {
                 presenceCount = backup.data.presences.length;
-            } else if (hasLegacyData) {
-                presenceCount = backup.presences.length;
             }
 
-            // Confirmation
             const confirmMsg = `Restaurer ${presenceCount} presences?\n\nAttention: Les donnees actuelles seront remplacees.`;
 
             if (!confirm(confirmMsg)) {
@@ -1326,52 +1096,18 @@ function handleRestoreFile(event) {
 
             status.textContent = 'Restauration en cours...';
 
-            // Adapter le format pour importAllData
-            let importData;
-            if (hasV2Data) {
-                importData = backup;
-            } else if (hasV1Data) {
-                // Convertir v1 vers v2
-                importData = {
-                    version: '2.0',
-                    data: {
-                        days: backup.data.presences.map(p => ({
-                            id: p.id || Date.now() + Math.random(),
-                            date: p.date,
-                            client: p.client,
-                            duree: p.duree,
-                            notes: p.notes || '',
-                            created_at: p.created_at || new Date().toISOString()
-                        })),
-                        clients: [...new Set(backup.data.presences.map(p => p.client))].sort(),
-                        vacations: backup.data.settings?.vacations || [],
-                        settings: backup.data.settings || {}
-                    }
-                };
-            } else {
-                // Format legacy API
-                importData = backup;
-            }
+            await api.importData(backup, true);
 
-            // Importer les donnees
-            const result = importAllData(importData, true);
+            status.className = 'backup-status success';
+            status.textContent = `Restauration reussie!`;
 
-            if (result.success) {
-                status.className = 'backup-status success';
-                status.textContent = `Restauration reussie! ${result.imported.days} presences importees.`;
+            await loadData();
+            await loadVacations();
+            loadAssistantSettings();
+            loadClientColors();
+            renderClientColorsList();
 
-                // Recharger les donnees dans l'app
-                loadData();
-                vacations = getAllVacations();
-                renderVacationsList();
-                loadAssistantSettings();
-                loadClientColors();
-                renderClientColorsList();
-
-                showToast('Donnees restaurees avec succes', 'success');
-            } else {
-                throw new Error(result.error);
-            }
+            showToast('Donnees restaurees avec succes', 'success');
 
         } catch (error) {
             console.error('Erreur restauration:', error);
@@ -1385,23 +1121,15 @@ function handleRestoreFile(event) {
     reader.readAsText(file);
 }
 
-// Reinitialisation complete
-function resetAllData() {
-    // Premier avertissement
+async function resetAllData() {
     const confirm1 = confirm(
         'ATTENTION\n\n' +
-        'Vous etes sur le point de supprimer TOUTES vos donnees :\n' +
-        '- Toutes les presences\n' +
-        '- Tous les conges\n' +
-        '- Tous les parametres\n' +
-        '- Toutes les couleurs clients\n\n' +
-        'Avez-vous effectue une SAUVEGARDE ?\n\n' +
-        'Cliquez sur OK pour continuer ou Annuler pour sauvegarder d\'abord.'
+        'Vous etes sur le point de supprimer TOUTES vos donnees.\n\n' +
+        'Avez-vous effectue une SAUVEGARDE ?'
     );
 
     if (!confirm1) return;
 
-    // Deuxieme confirmation
     const confirm2 = confirm(
         'CONFIRMATION FINALE\n\n' +
         'Cette action est IRREVERSIBLE.\n\n' +
@@ -1411,14 +1139,21 @@ function resetAllData() {
     if (!confirm2) return;
 
     try {
-        // Supprimer toutes les donnees via storage.js
-        const result = resetAllData_storage();
+        // Supprimer via API
+        const supabase = getSupabase();
+        const user = await auth.getCurrentUser();
 
-        // Supprimer aussi les autres donnees localStorage
+        await Promise.all([
+            supabase.from('days').delete().eq('user_id', user.id),
+            supabase.from('clients').delete().eq('user_id', user.id),
+            supabase.from('holidays').delete().eq('user_id', user.id),
+            supabase.from('user_settings').delete().eq('user_id', user.id)
+        ]);
+
+        // Supprimer les donnees locales
         localStorage.removeItem('notificationSettings');
         localStorage.removeItem('assistantSettings');
         localStorage.removeItem('clientColors');
-        localStorage.removeItem('logmyjob_vacations');
 
         // Reinitialiser les variables
         vacations = [];
@@ -1428,21 +1163,17 @@ function resetAllData() {
         allPresences = [];
         allClients = [];
 
-        // Recharger l'interface
-        loadData();
-        renderVacationsList();
+        await loadData();
+        await loadVacations();
         loadAssistantSettings();
         renderClientColorsList();
 
-        // Desactiver les notifications
         const toggle = document.getElementById('notifications-enabled');
         if (toggle) toggle.checked = false;
         const config = document.getElementById('notifications-config');
         if (config) config.style.display = 'none';
 
         showToast('Reinitialisation terminee.', 'success');
-
-        // Retourner a l'accueil
         navigateTo('home');
 
     } catch (error) {
@@ -1451,49 +1182,18 @@ function resetAllData() {
     }
 }
 
-// Alias pour eviter conflit de nom avec storage.js
-function resetAllData_storage() {
-    return resetAllData_internal();
-}
-
-function resetAllData_internal() {
-    try {
-        // Utiliser les fonctions de storage.js
-        saveToStorage('logmyjob_days', []);
-        saveToStorage('logmyjob_clients', []);
-        saveToStorage('logmyjob_vacations', []);
-        return { success: true };
-    } catch (e) {
-        return { success: false, error: e.message };
-    }
-}
-
-// Fonction utilitaire pour sauvegarder dans localStorage (utilisee par resetAllData_internal)
-function saveToStorage(key, data) {
-    try {
-        localStorage.setItem(key, JSON.stringify(data));
-        return true;
-    } catch (e) {
-        console.error(`Error saving ${key}:`, e);
-        return false;
-    }
-}
-
 // ============ DARK MODE ============
 
-let currentTheme = 'auto'; // 'light', 'dark', 'auto'
+let currentTheme = 'auto';
 
 function initDarkMode() {
-    // Charger le theme sauvegarde
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
         currentTheme = savedTheme;
     }
 
-    // Appliquer le theme initial
     applyTheme(currentTheme);
 
-    // Ecouter les changements de preference systeme
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     mediaQuery.addEventListener('change', (e) => {
         if (currentTheme === 'auto') {
@@ -1501,7 +1201,6 @@ function initDarkMode() {
         }
     });
 
-    // Initialiser les boutons de theme
     const toggleBtn = document.getElementById('dark-mode-toggle');
     const lightBtn = document.getElementById('theme-light');
     const darkBtn = document.getElementById('theme-dark');
@@ -1525,7 +1224,6 @@ function initDarkMode() {
         autoBtn.addEventListener('click', () => setTheme('auto'));
     }
 
-    // Mettre a jour l'interface initiale
     updateThemeUI();
 }
 
@@ -1540,7 +1238,6 @@ function applyTheme(theme) {
     const html = document.documentElement;
     const body = document.body;
 
-    // Supprimer les classes existantes
     html.classList.remove('dark', 'light');
     body.classList.remove('dark', 'light');
 
@@ -1549,10 +1246,8 @@ function applyTheme(theme) {
     if (theme === 'dark') {
         isDark = true;
     } else if (theme === 'auto') {
-        // Verifier la preference systeme
         isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
-    // theme === 'light' -> isDark reste false
 
     if (isDark) {
         html.classList.add('dark');
@@ -1562,13 +1257,11 @@ function applyTheme(theme) {
         body.classList.add('light');
     }
 
-    // Mettre a jour le meta theme-color
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
         metaThemeColor.setAttribute('content', isDark ? '#1e293b' : '#2563eb');
     }
 
-    // Mettre a jour Chart.js si disponible
     updateChartTheme(isDark);
 }
 
@@ -1578,15 +1271,12 @@ function updateThemeUI() {
     const darkBtn = document.getElementById('theme-dark');
     const autoBtn = document.getElementById('theme-auto');
 
-    // Determiner si le mode sombre est actif
     const isDark = document.documentElement.classList.contains('dark');
 
-    // Mettre a jour le toggle
     if (toggleBtn) {
         toggleBtn.checked = isDark;
     }
 
-    // Mettre a jour les boutons de theme
     [lightBtn, darkBtn, autoBtn].forEach(btn => {
         if (btn) btn.classList.remove('active');
     });
@@ -1601,7 +1291,6 @@ function updateThemeUI() {
 }
 
 function updateChartTheme(isDark) {
-    // Mettre a jour les couleurs du graphique Chart.js si il existe
     if (typeof Chart !== 'undefined' && Chart.instances) {
         const textColor = isDark ? '#f1f5f9' : '#1e293b';
         const gridColor = isDark ? '#475569' : '#e2e8f0';
@@ -1630,7 +1319,6 @@ function updateChartTheme(isDark) {
     }
 }
 
-// Fonction utilitaire pour verifier si le mode sombre est actif
 function isDarkMode() {
     return document.documentElement.classList.contains('dark');
 }
@@ -1640,14 +1328,11 @@ function isDarkMode() {
 let deferredPrompt = null;
 
 function initPWAInstall() {
-    // Verifier si deja installe (mode standalone)
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
         || window.navigator.standalone === true;
 
-    // Detecter iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-    // Ecouter l'evenement beforeinstallprompt (Chrome, Edge, etc.)
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
@@ -1655,7 +1340,6 @@ function initPWAInstall() {
         updateSettingsInstallSection();
     });
 
-    // Ecouter quand l'app est installee
     window.addEventListener('appinstalled', () => {
         deferredPrompt = null;
         hideInstallBanner();
@@ -1664,29 +1348,21 @@ function initPWAInstall() {
         showToast('Application installee avec succes!', 'success');
     });
 
-    // Initialiser les boutons
     initInstallBannerButtons();
     initIOSBannerButtons();
     initSettingsInstallButton();
 
-    // Afficher la banniere appropriee
     if (isStandalone) {
-        // Deja installe - ne rien afficher
         updateSettingsInstallSection();
     } else if (isIOS) {
-        // iOS - afficher instructions si pas refuse recemment
         if (shouldShowIOSBanner()) {
             showIOSBanner();
         }
         updateSettingsInstallSection();
     }
-    // Pour Android/Chrome, la banniere s'affiche via beforeinstallprompt
 
-    // Mettre a jour la section reglages
     updateSettingsInstallSection();
 }
-
-// ============ BANNIERE INSTALLATION (Android/Chrome) ============
 
 function showInstallBanner() {
     if (!shouldShowInstallBanner()) return;
@@ -1710,14 +1386,12 @@ function shouldShowInstallBanner() {
     const dismissed = localStorage.getItem('pwa-install-dismissed');
     const later = localStorage.getItem('pwa-install-later');
 
-    // Si refuse, ne plus afficher pendant 7 jours
     if (dismissed) {
         const dismissedDate = new Date(dismissed);
         const daysSinceDismissed = (Date.now() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
         if (daysSinceDismissed < 7) return false;
     }
 
-    // Si "plus tard", reafficher apres 3 jours
     if (later) {
         const laterDate = new Date(later);
         const daysSinceLater = (Date.now() - laterDate.getTime()) / (1000 * 60 * 60 * 24);
@@ -1774,8 +1448,6 @@ async function triggerInstallPrompt() {
     hideInstallBanner();
 }
 
-// ============ BANNIERE iOS ============
-
 function showIOSBanner() {
     const banner = document.getElementById('ios-install-banner');
     if (banner) {
@@ -1796,7 +1468,6 @@ function shouldShowIOSBanner() {
     const dismissed = localStorage.getItem('pwa-ios-dismissed');
     const understood = localStorage.getItem('pwa-ios-understood');
 
-    // Si "j'ai compris" ou ferme, ne plus afficher pendant 7 jours
     const checkDate = dismissed || understood;
     if (checkDate) {
         const date = new Date(checkDate);
@@ -1826,8 +1497,6 @@ function initIOSBannerButtons() {
     }
 }
 
-// ============ SECTION REGLAGES ============
-
 function updateSettingsInstallSection() {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
         || window.navigator.standalone === true;
@@ -1837,23 +1506,17 @@ function updateSettingsInstallSection() {
     const iosSection = document.getElementById('app-ios-instructions');
     const installedSection = document.getElementById('app-installed');
 
-    // Cacher toutes les sections
     if (notInstalledSection) notInstalledSection.classList.add('hidden');
     if (iosSection) iosSection.classList.add('hidden');
     if (installedSection) installedSection.classList.add('hidden');
 
     if (isStandalone) {
-        // App installee
         if (installedSection) installedSection.classList.remove('hidden');
     } else if (isIOS) {
-        // iOS - montrer instructions
         if (iosSection) iosSection.classList.remove('hidden');
     } else if (deferredPrompt) {
-        // Android/Chrome - montrer bouton installer
         if (notInstalledSection) notInstalledSection.classList.remove('hidden');
     } else {
-        // Pas de prompt disponible mais pas installe
-        // On affiche quand meme la section "non installe" avec un message adapte
         if (notInstalledSection) notInstalledSection.classList.remove('hidden');
     }
 }
@@ -1866,7 +1529,6 @@ function initSettingsInstallButton() {
             if (deferredPrompt) {
                 await triggerInstallPrompt();
             } else {
-                // Pas de prompt disponible - afficher message
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
                 if (isIOS) {
                     showIOSBanner();
@@ -1879,8 +1541,20 @@ function initSettingsInstallButton() {
     }
 }
 
-// Fonction pour verifier si l'app est installee
 function isPWAInstalled() {
     return window.matchMedia('(display-mode: standalone)').matches
         || window.navigator.standalone === true;
+}
+
+// Fonctions legacy pour compatibilite avec autres modules
+function getAllDays() {
+    return allPresences;
+}
+
+function getAllClients() {
+    return allClients;
+}
+
+function getAllVacations() {
+    return vacations;
 }
