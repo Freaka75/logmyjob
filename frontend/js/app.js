@@ -762,12 +762,16 @@ function showToast(message, type = 'info') {
 
 function initVacations() {
     const btnAdd = document.getElementById('btn-add-vacation');
+    const btnAddHome = document.getElementById('btn-add-vacation-home');
     const modal = document.getElementById('vacation-modal');
     const modalClose = document.getElementById('vacation-modal-close');
     const cancelBtn = document.getElementById('vacation-cancel');
     const form = document.getElementById('vacation-form');
 
+    // Bouton dans parametres
     if (btnAdd) btnAdd.addEventListener('click', () => showVacationModal());
+    // Bouton sur page accueil
+    if (btnAddHome) btnAddHome.addEventListener('click', () => showVacationModal());
 
     modalClose.addEventListener('click', () => hideVacationModal());
     cancelBtn.addEventListener('click', () => hideVacationModal());
@@ -888,18 +892,30 @@ function saveVacation() {
     }
 }
 
-function deleteVacation(id) {
-    if (!confirm('Supprimer cette période de congés ?')) return;
+function deleteVacation(id, skipConfirm = false) {
+    if (!skipConfirm && !confirm('Supprimer cette periode de conges ?')) return;
 
-    vacations = vacations.filter(v => v.id !== id);
+    vacations = vacations.filter(v => v.id !== id && String(v.id) !== String(id));
     saveVacationsToStorage();
     renderVacationsList();
     checkCurrentVacation();
-    showToast('Congés supprimés', 'success');
 
     // Rafraîchir le calendrier si on est sur cette page
     if (currentPage === 'calendar') {
         renderCalendar();
+    }
+}
+
+// Fonction pour editer un conge depuis le calendrier
+function editVacation(id) {
+    const vacation = vacations.find(v => String(v.id) === String(id));
+    if (vacation) {
+        // Fermer le modal des details du jour
+        const dayModal = document.getElementById('day-details-modal');
+        if (dayModal) dayModal.style.display = 'none';
+
+        // Ouvrir le modal de modification
+        showVacationModal(vacation);
     }
 }
 

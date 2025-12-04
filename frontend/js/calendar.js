@@ -258,10 +258,29 @@ function showDayDetails(dateStr, presences) {
     const content = document.getElementById('day-details-content');
 
     // Mettre à jour le titre
-    title.textContent = `Détails - ${formatDate(dateStr)}`;
+    title.textContent = `Details - ${formatDate(dateStr)}`;
 
     // Construire le contenu
     content.innerHTML = '';
+
+    // Verifier si c'est un jour de conges
+    const vacation = getVacationForDate(dateStr);
+    if (vacation) {
+        const vacationItem = document.createElement('div');
+        vacationItem.className = 'day-detail-item vacation-detail';
+        vacationItem.innerHTML = `
+            <div class="detail-color-bar" style="background-color: #f59e0b"></div>
+            <div class="detail-content">
+                <div class="detail-client">🏖️ ${getVacationType(vacation.type)}</div>
+                <span class="detail-badge vacation">Du ${formatDate(vacation.dateDebut)} au ${formatDate(vacation.dateFin)}</span>
+            </div>
+            <div class="detail-actions">
+                <button class="btn-primary btn-small" onclick="editVacation('${vacation.id}')">✏️</button>
+                <button class="btn-danger btn-small" onclick="deleteVacationFromCalendar('${vacation.id}')">🗑️</button>
+            </div>
+        `;
+        content.appendChild(vacationItem);
+    }
 
     presences.forEach(presence => {
         const item = document.createElement('div');
@@ -276,11 +295,11 @@ function showDayDetails(dateStr, presences) {
 
         let durationBadge = '';
         if (isFullDay) {
-            durationBadge = '<span class="detail-badge full">Journée complète</span>';
+            durationBadge = '<span class="detail-badge full">Journee complete</span>';
         } else if (isMorning) {
             durationBadge = '<span class="detail-badge half">Matin (0.5j)</span>';
         } else if (isAfternoon) {
-            durationBadge = '<span class="detail-badge half">Après-midi (0.5j)</span>';
+            durationBadge = '<span class="detail-badge half">Apres-midi (0.5j)</span>';
         }
 
         item.innerHTML = `
@@ -299,6 +318,11 @@ function showDayDetails(dateStr, presences) {
         content.appendChild(item);
     });
 
+    // Si aucun contenu (ni presence ni conge)
+    if (content.innerHTML === '') {
+        content.innerHTML = '<p class="text-center text-gray-500 py-4">Aucune donnee pour ce jour</p>';
+    }
+
     // Afficher le modal
     modal.style.display = 'flex';
 
@@ -313,4 +337,21 @@ function showDayDetails(dateStr, presences) {
             modal.style.display = 'none';
         }
     };
+}
+
+// Obtenir le conge pour une date donnee
+function getVacationForDate(dateStr) {
+    if (typeof vacations === 'undefined' || !Array.isArray(vacations)) return null;
+    return vacations.find(v => {
+        return dateStr >= v.dateDebut && dateStr <= v.dateFin;
+    });
+}
+
+// Supprimer un conge depuis le calendrier
+function deleteVacationFromCalendar(id) {
+    if (!confirm('Supprimer cette periode de conges ?')) return;
+    deleteVacation(id, true); // true = skip confirmation (deja fait)
+    document.getElementById('day-details-modal').style.display = 'none';
+    renderCalendar();
+    showToast('Conges supprimes', 'success');
 }

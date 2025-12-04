@@ -1,4 +1,4 @@
-const CACHE_NAME = 'log-my-job-v33';
+const CACHE_NAME = 'log-my-job-v34';
 const urlsToCache = [
   '/',
   '/index.html',
