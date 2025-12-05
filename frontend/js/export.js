@@ -154,10 +154,18 @@ function formatDateFR(date) {
 }
 
 // Obtenir les présences filtrées pour l'export
+// Utilise billing_month si défini, sinon la date réelle
 function getExportPresences() {
     const { start, end } = getExportDateRange();
+    const startMonth = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`;
+    const endMonth = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}`;
 
     return allPresences.filter(p => {
+        // Si billing_month est défini, utiliser celui-ci pour le filtrage
+        if (p.billing_month) {
+            return p.billing_month >= startMonth && p.billing_month <= endMonth;
+        }
+        // Sinon, utiliser la date réelle
         const date = new Date(p.date);
         return date >= start && date <= end;
     });
@@ -177,15 +185,23 @@ function generateClientSummary() {
                 fullDays: [],
                 halfDaysMorning: [],
                 halfDaysAfternoon: [],
-                byMonth: {} // Détail par mois
+                byMonth: {}, // Détail par mois
+                deferredDays: [] // Jours différés
             };
         }
 
         const date = new Date(p.date);
         const day = date.getDate();
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const monthLabel = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+        const originalMonthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+        // Utiliser billing_month si défini, sinon le mois réel
+        const monthKey = p.billing_month || originalMonthKey;
+        const [year, month] = monthKey.split('-');
+        const monthLabel = `${monthNames[parseInt(month) - 1]} ${year}`;
         const dateStr = formatDateShort(p.date);
+
+        // Marquer si c'est un jour différé (date originale différente du mois de facturation)
+        const isDeferred = p.billing_month && p.billing_month !== originalMonthKey;
 
         // Initialiser le mois si nécessaire
         if (!summary[p.client].byMonth[monthKey]) {
@@ -194,25 +210,39 @@ function generateClientSummary() {
                 total: 0,
                 fullDays: [],
                 halfDaysMorning: [],
-                halfDaysAfternoon: []
+                halfDaysAfternoon: [],
+                deferredDays: [] // Jours différés pour ce mois
             };
         }
+
+        // Pour les jours différés, ajouter l'info du mois d'origine
+        const dayDisplay = isDeferred ? `${day}*` : day;
+        const dayInfo = isDeferred ? { day, originalMonth: monthNames[date.getMonth()] } : null;
 
         if (p.duree === 'journee_complete' || p.duree === '1.0') {
             summary[p.client].total += 1;
             summary[p.client].fullDays.push(day);
             summary[p.client].byMonth[monthKey].total += 1;
-            summary[p.client].byMonth[monthKey].fullDays.push(day);
+            summary[p.client].byMonth[monthKey].fullDays.push(dayDisplay);
+            if (isDeferred) {
+                summary[p.client].byMonth[monthKey].deferredDays.push(dayInfo);
+            }
         } else if (p.duree === 'demi_journee_matin') {
             summary[p.client].total += 0.5;
             summary[p.client].halfDaysMorning.push(dateStr);
             summary[p.client].byMonth[monthKey].total += 0.5;
-            summary[p.client].byMonth[monthKey].halfDaysMorning.push(day);
+            summary[p.client].byMonth[monthKey].halfDaysMorning.push(dayDisplay);
+            if (isDeferred) {
+                summary[p.client].byMonth[monthKey].deferredDays.push(dayInfo);
+            }
         } else if (p.duree === 'demi_journee_aprem') {
             summary[p.client].total += 0.5;
             summary[p.client].halfDaysAfternoon.push(dateStr);
             summary[p.client].byMonth[monthKey].total += 0.5;
-            summary[p.client].byMonth[monthKey].halfDaysAfternoon.push(day);
+            summary[p.client].byMonth[monthKey].halfDaysAfternoon.push(dayDisplay);
+            if (isDeferred) {
+                summary[p.client].byMonth[monthKey].deferredDays.push(dayInfo);
+            }
         }
     });
 
@@ -246,6 +276,7 @@ function renderExportPreview() {
     html += '</tr></thead><tbody>';
 
     let grandTotal = 0;
+    let hasDeferred = false;
 
     clients.forEach(client => {
         const data = summary[client];
@@ -255,27 +286,44 @@ function renderExportPreview() {
         // Grouper par mois pour afficher les dates
         const monthKeys = Object.keys(data.byMonth).sort();
         let datesHtml = '';
-        
+
         monthKeys.forEach((monthKey, idx) => {
             const monthData = data.byMonth[monthKey];
             const monthName = monthData.label.split(' ')[0]; // Juste le nom du mois
-            
+
             // Collecter tous les jours du mois
             let daysInfo = [];
-            
+
             if (monthData.fullDays.length > 0) {
-                const days = monthData.fullDays.sort((a,b) => a-b);
+                const days = [...monthData.fullDays].sort((a, b) => {
+                    const numA = typeof a === 'string' ? parseInt(a) : a;
+                    const numB = typeof b === 'string' ? parseInt(b) : b;
+                    return numA - numB;
+                });
                 daysInfo.push(days.join(', '));
             }
             if (monthData.halfDaysMorning.length > 0) {
-                const days = monthData.halfDaysMorning.sort((a,b) => a-b);
+                const days = [...monthData.halfDaysMorning].sort((a, b) => {
+                    const numA = typeof a === 'string' ? parseInt(a) : a;
+                    const numB = typeof b === 'string' ? parseInt(b) : b;
+                    return numA - numB;
+                });
                 daysInfo.push(days.map(d => d + ' (AM)').join(', '));
             }
             if (monthData.halfDaysAfternoon.length > 0) {
-                const days = monthData.halfDaysAfternoon.sort((a,b) => a-b);
+                const days = [...monthData.halfDaysAfternoon].sort((a, b) => {
+                    const numA = typeof a === 'string' ? parseInt(a) : a;
+                    const numB = typeof b === 'string' ? parseInt(b) : b;
+                    return numA - numB;
+                });
                 daysInfo.push(days.map(d => d + ' (PM)').join(', '));
             }
-            
+
+            // Verifier s'il y a des jours differes
+            if (monthData.deferredDays && monthData.deferredDays.length > 0) {
+                hasDeferred = true;
+            }
+
             if (daysInfo.length > 0) {
                 if (idx > 0) datesHtml += '<br>';
                 datesHtml += `<strong>${monthName}:</strong> ${daysInfo.join(', ')}`;
@@ -290,6 +338,12 @@ function renderExportPreview() {
     });
 
     html += '</tbody></table>';
+
+    // Ajouter la legende si des jours sont differes
+    if (hasDeferred) {
+        html += '<p class="deferred-legend">* Jour reporte du mois precedent</p>';
+    }
+
     preview.innerHTML = html;
 
     totalDiv.innerHTML = `<strong>TOTAL : ${grandTotal} jour${grandTotal > 1 ? 's' : ''}</strong>`;

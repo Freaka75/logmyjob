@@ -893,3 +893,32 @@ body.dark {
     margin-right: 8px;
     vertical-align: middle;
 }
+
+/* Legende pour les jours differes */
+.deferred-legend {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: #fef3c7;
+    border-radius: 8px;
+    border-left: 3px solid #f59e0b;
+}
+
+.dark .deferred-legend {
+    background: rgba(245, 158, 11, 0.15);
+}
+
+/* Badge pour jours differes */
+.deferred-badge {
+    display: inline-block;
+    font-size: 10px;
+    background: #f59e0b;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+    font-weight: 500;
+    vertical-align: middle;
+}

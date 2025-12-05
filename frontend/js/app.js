@@ -266,6 +266,7 @@ function initQuickDateButtons() {
 
             quickDateButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            updateBillingMonthLabel();
         });
     });
 
@@ -279,7 +280,42 @@ function initQuickDateButtons() {
                 btn.classList.remove('active');
             }
         });
+        updateBillingMonthLabel();
     });
+
+    // Event listener pour la checkbox "Facturer le mois prochain"
+    const billNextMonthCheckbox = document.getElementById('bill-next-month');
+    if (billNextMonthCheckbox) {
+        billNextMonthCheckbox.addEventListener('change', updateBillingMonthLabel);
+    }
+}
+
+// Formater le mois de facturation pour affichage
+function formatBillingMonth(monthStr) {
+    if (!monthStr) return '';
+    const [year, month] = monthStr.split('-');
+    const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
+                        'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
+    return `${monthNames[parseInt(month) - 1]} ${year}`;
+}
+
+// Mettre a jour le label du mois de facturation
+function updateBillingMonthLabel() {
+    const billNextMonthCheckbox = document.getElementById('bill-next-month');
+    const billingMonthLabel = document.getElementById('billing-month-label');
+    const dateInput = document.getElementById('date');
+
+    if (!billNextMonthCheckbox || !billingMonthLabel) return;
+
+    if (billNextMonthCheckbox.checked && dateInput.value) {
+        const dateObj = new Date(dateInput.value);
+        dateObj.setMonth(dateObj.getMonth() + 1);
+        const billingMonth = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+        billingMonthLabel.textContent = formatBillingMonth(billingMonth);
+        billingMonthLabel.classList.remove('hidden');
+    } else {
+        billingMonthLabel.classList.add('hidden');
+    }
 }
 
 function getQuickDate(type) {
@@ -316,6 +352,8 @@ function showForm(editData = null) {
     const formContainer = document.getElementById('form-container');
     const formTitle = document.getElementById('form-title');
     const form = document.getElementById('presence-form');
+    const billNextMonthCheckbox = document.getElementById('bill-next-month');
+    const billingMonthLabel = document.getElementById('billing-month-label');
 
     if (editData) {
         formTitle.textContent = 'Modifier la presence';
@@ -334,15 +372,29 @@ function showForm(editData = null) {
 
         document.querySelector(`input[name="duree"][value="${editData.duree}"]`).checked = true;
         document.getElementById('notes').value = editData.notes || '';
+
+        // Gerer billing_month
+        if (editData.billing_month) {
+            billNextMonthCheckbox.checked = true;
+            billingMonthLabel.textContent = formatBillingMonth(editData.billing_month);
+            billingMonthLabel.classList.remove('hidden');
+        } else {
+            billNextMonthCheckbox.checked = false;
+            billingMonthLabel.classList.add('hidden');
+        }
+
         currentEditId = editData.id;
     } else {
         formTitle.textContent = 'Nouvelle presence';
         form.reset();
         document.getElementById('date').value = getTodayDate();
+        billNextMonthCheckbox.checked = false;
+        billingMonthLabel.classList.add('hidden');
         currentEditId = null;
     }
 
     updateQuickDateButtonsState();
+    updateBillingMonthLabel();
     formContainer.style.display = 'block';
     formContainer.scrollIntoView({ behavior: 'smooth' });
 }
@@ -375,13 +427,22 @@ async function savePresence() {
     const client = clientInput || clientSelect;
     const duree = document.querySelector('input[name="duree"]:checked').value;
     const notes = document.getElementById('notes').value;
+    const billNextMonth = document.getElementById('bill-next-month').checked;
 
     if (!client) {
         showToast('Veuillez selectionner ou saisir un client', 'error');
         return;
     }
 
-    const data = { date, client, duree, notes };
+    // Calculer le mois de facturation si "Facturer le mois prochain" est coche
+    let billing_month = null;
+    if (billNextMonth && date) {
+        const dateObj = new Date(date);
+        dateObj.setMonth(dateObj.getMonth() + 1);
+        billing_month = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    const data = { date, client, duree, notes, billing_month };
 
     try {
         let result;
@@ -460,7 +521,13 @@ function updateMonthWidget() {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-    const monthPresences = allPresences.filter(p => p.date.startsWith(currentMonth));
+    // Filtrer par billing_month si defini, sinon par date reelle
+    const monthPresences = allPresences.filter(p => {
+        if (p.billing_month) {
+            return p.billing_month === currentMonth;
+        }
+        return p.date.startsWith(currentMonth);
+    });
 
     const totalDays = calculateTotalDays(monthPresences);
     document.getElementById('month-total').textContent = totalDays.toFixed(1);
@@ -500,10 +567,17 @@ function updateRecentDays() {
         const div = document.createElement('div');
         div.className = 'day-item';
         const clientColor = getClientColor(presence.client);
+
+        // Afficher un badge si le jour est differe au mois prochain
+        let deferredBadge = '';
+        if (presence.billing_month) {
+            deferredBadge = `<span class="deferred-badge">Facture ${formatBillingMonth(presence.billing_month)}</span>`;
+        }
+
         div.innerHTML = `
             <div class="day-color-bar" style="background-color: ${clientColor}"></div>
             <div class="day-info">
-                <div class="day-date">${formatDate(presence.date)}</div>
+                <div class="day-date">${formatDate(presence.date)} ${deferredBadge}</div>
                 <div class="day-client">${presence.client}</div>
                 <div class="day-duration">${formatDuration(presence.duree)}</div>
                 ${presence.notes ? `<div class="day-notes">${presence.notes}</div>` : ''}

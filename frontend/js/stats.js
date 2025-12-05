@@ -55,10 +55,18 @@ function getStatsDateRange() {
 }
 
 // Filtrer les presences selon la periode
+// Utilise billing_month si defini, sinon la date reelle
 function getStatsPresences() {
     const { start, end } = getStatsDateRange();
+    const startMonth = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`;
+    const endMonth = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}`;
 
     return allPresences.filter(p => {
+        // Si billing_month est defini, utiliser celui-ci pour le filtrage
+        if (p.billing_month) {
+            return p.billing_month >= startMonth && p.billing_month <= endMonth;
+        }
+        // Sinon, utiliser la date reelle
         const date = new Date(p.date);
         return date >= start && date <= end;
     });
@@ -105,9 +113,11 @@ function calculateStats() {
         }
         byClient[p.client] += days;
 
-        // Par mois
+        // Par mois - utiliser billing_month si defini
         const date = new Date(p.date);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const originalMonthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const monthKey = p.billing_month || originalMonthKey;
+
         if (!byMonth[monthKey]) {
             byMonth[monthKey] = {
                 total: 0,

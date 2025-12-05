@@ -38,6 +38,7 @@ const api = {
             client: day.client,
             duree: day.duration,
             notes: day.notes,
+            billing_month: day.billing_month,
             created_at: day.created_at
         }));
     },
@@ -57,7 +58,8 @@ const api = {
                 date: dayData.date,
                 client: dayData.client,
                 duration: dayData.duree,
-                notes: dayData.notes || null
+                notes: dayData.notes || null,
+                billing_month: dayData.billing_month || null
             })
             .select()
             .single();
@@ -74,7 +76,8 @@ const api = {
                 date: data.date,
                 client: data.client,
                 duree: data.duration,
-                notes: data.notes
+                notes: data.notes,
+                billing_month: data.billing_month
             }
         };
     },
@@ -88,7 +91,8 @@ const api = {
                 date: dayData.date,
                 client: dayData.client,
                 duration: dayData.duree,
-                notes: dayData.notes || null
+                notes: dayData.notes || null,
+                billing_month: dayData.billing_month || null
             })
             .eq('id', id)
             .select()
@@ -106,7 +110,8 @@ const api = {
                 date: data.date,
                 client: data.client,
                 duree: data.duration,
-                notes: data.notes
+                notes: data.notes,
+                billing_month: data.billing_month
             }
         };
     },
@@ -437,7 +442,8 @@ const api = {
                 date: d.date,
                 client: d.client,
                 duration: d.duree || d.duration,
-                notes: d.notes
+                notes: d.notes,
+                billing_month: d.billing_month || null
             }));
 
             await supabase.from('days').insert(daysToInsert);

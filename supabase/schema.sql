@@ -9,6 +9,7 @@ CREATE TABLE days (
     client TEXT NOT NULL,
     duration TEXT NOT NULL CHECK (duration IN ('journee_complete', 'demi_journee_matin', 'demi_journee_aprem')),
     notes TEXT,
+    billing_month TEXT, -- Format YYYY-MM, si non null la journee est facturee ce mois-la
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
