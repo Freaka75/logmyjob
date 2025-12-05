@@ -87,8 +87,8 @@
                         </svg>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <h3 class="text-white font-semibold text-sm">Installer l'application</h3>
-                        <p class="text-blue-100 text-xs mt-0.5">Acces rapide depuis votre ecran d'accueil</p>
+                        <h3 class="text-white font-semibold text-sm" data-i18n="install_app">Installer l'application</h3>
+                        <p class="text-blue-100 text-xs mt-0.5" data-i18n="install_quick_access">Acces rapide depuis votre ecran d'accueil</p>
                     </div>
                     <button id="install-banner-close" class="flex-shrink-0 text-white/70 hover:text-white p-1">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,10 +97,10 @@
                     </button>
                 </div>
                 <div class="flex gap-2 mt-3">
-                    <button id="install-banner-btn" class="flex-1 bg-white text-blue-600 font-semibold py-2.5 px-4 rounded-xl text-sm hover:bg-blue-50 transition-colors">
+                    <button id="install-banner-btn" class="flex-1 bg-white text-blue-600 font-semibold py-2.5 px-4 rounded-xl text-sm hover:bg-blue-50 transition-colors" data-i18n="install_btn">
                         Installer
                     </button>
-                    <button id="install-banner-later" class="px-4 py-2.5 text-white/90 text-sm font-medium hover:text-white transition-colors">
+                    <button id="install-banner-later" class="px-4 py-2.5 text-white/90 text-sm font-medium hover:text-white transition-colors" data-i18n="install_later">
                         Plus tard
                     </button>
                 </div>
@@ -115,8 +115,8 @@
                         </svg>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <h3 class="text-white font-semibold text-sm">Installer sur iPhone/iPad</h3>
-                        <p class="text-gray-300 text-xs mt-0.5">Ajoutez l'app a votre ecran d'accueil</p>
+                        <h3 class="text-white font-semibold text-sm" data-i18n="install_ios_title">Installer sur iPhone/iPad</h3>
+                        <p class="text-gray-300 text-xs mt-0.5" data-i18n="install_ios_desc">Ajoutez l'app a votre ecran d'accueil</p>
                     </div>
                     <button id="ios-banner-close" class="flex-shrink-0 text-white/70 hover:text-white p-1">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,7 +141,7 @@
                         </svg>
                     </div>
                 </div>
-                <button id="ios-banner-understood" class="w-full mt-3 bg-white text-gray-800 font-semibold py-2.5 px-4 rounded-xl text-sm hover:bg-gray-100 transition-colors">
+                <button id="ios-banner-understood" class="w-full mt-3 bg-white text-gray-800 font-semibold py-2.5 px-4 rounded-xl text-sm hover:bg-gray-100 transition-colors" data-i18n="understood">
                     J'ai compris
                 </button>
             </div>
@@ -227,7 +227,7 @@
 
                     <div class="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                         <input type="checkbox" id="bill-next-month" name="bill-next-month" class="w-5 h-5 text-amber-600 rounded border-gray-300 focus:ring-amber-500">
-                        <label for="bill-next-month" class="text-sm font-medium text-amber-800 cursor-pointer">
+                        <label for="bill-next-month" class="text-sm font-medium text-amber-800 cursor-pointer" data-i18n="bill_next_month">
                             Facturer le mois prochain
                         </label>
                         <span id="billing-month-label" class="hidden ml-auto text-xs bg-amber-200 text-amber-800 px-2 py-1 rounded-full font-medium"></span>
@@ -251,7 +251,7 @@
     <!-- Page Calendrier -->
     <div id="page-calendar" class="page hidden min-h-screen">
         <header class="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-6 shadow-lg">
-            <h1 class="text-2xl font-bold text-center">Calendrier</h1>
+            <h1 class="text-2xl font-bold text-center" data-i18n="calendar_title">Calendrier</h1>
         </header>
 
         <div class="px-4 py-4 max-w-lg mx-auto space-y-4">
@@ -289,7 +289,7 @@
     <!-- Page Historique -->
     <div id="page-history" class="page hidden min-h-screen">
         <header class="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-6 shadow-lg">
-            <h1 class="text-2xl font-bold text-center">Historique</h1>
+            <h1 class="text-2xl font-bold text-center" data-i18n="history_title">Historique</h1>
         </header>
 
         <div class="px-4 py-4 max-w-lg mx-auto space-y-4">
@@ -360,7 +360,7 @@
     <!-- Page Stats -->
     <div id="page-stats" class="page hidden min-h-screen">
         <header class="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-6 shadow-lg">
-            <h1 class="text-2xl font-bold text-center">Statistiques</h1>
+            <h1 class="text-2xl font-bold text-center" data-i18n="stats_title">Statistiques</h1>
         </header>
 
         <div class="px-4 py-4 max-w-lg mx-auto space-y-4">
@@ -377,28 +377,28 @@
                 <div class="bg-white rounded-2xl shadow-md p-4 text-center">
                     <span class="text-2xl">📅</span>
                     <div class="text-2xl font-bold text-blue-600 mt-1" id="stat-total-days">0</div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">Jours</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide" data-i18n="total_days">Jours</div>
                 </div>
                 <div class="bg-white rounded-2xl shadow-md p-4 text-center">
                     <span class="text-2xl">👥</span>
                     <div class="text-2xl font-bold text-blue-600 mt-1" id="stat-total-clients">0</div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">Clients</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide" data-i18n="total_clients">Clients</div>
                 </div>
                 <div class="bg-white rounded-2xl shadow-md p-4 text-center">
                     <span class="text-2xl">📆</span>
                     <div class="text-2xl font-bold text-blue-600 mt-1" id="stat-avg-month">0</div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">Moy/mois</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide" data-i18n="avg_month">Moy/mois</div>
                 </div>
                 <div class="bg-white rounded-2xl shadow-md p-4 text-center">
                     <span class="text-2xl">📈</span>
                     <div class="text-2xl font-bold text-blue-600 mt-1" id="stat-half-days">0%</div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">Demi-j</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide" data-i18n="half_days">Demi-j</div>
                 </div>
             </div>
 
             <!-- Graphique -->
             <div class="bg-white rounded-2xl shadow-md p-4">
-                <h3 class="text-sm font-semibold text-gray-800 mb-3">Evolution mensuelle</h3>
+                <h3 class="text-sm font-semibold text-gray-800 mb-3" data-i18n="monthly_evolution">Evolution mensuelle</h3>
                 <div class="h-48">
                     <canvas id="stats-chart"></canvas>
                 </div>
@@ -406,29 +406,29 @@
 
             <!-- Repartition clients -->
             <div class="bg-white rounded-2xl shadow-md p-4">
-                <h3 class="text-sm font-semibold text-gray-800 mb-3">Repartition par client</h3>
+                <h3 class="text-sm font-semibold text-gray-800 mb-3" data-i18n="client_distribution">Repartition par client</h3>
                 <div id="client-distribution" class="space-y-3"></div>
             </div>
 
             <!-- Insights -->
             <div class="bg-white rounded-2xl shadow-md p-4">
-                <h3 class="text-sm font-semibold text-gray-800 mb-3">Insights</h3>
+                <h3 class="text-sm font-semibold text-gray-800 mb-3" data-i18n="insights">Insights</h3>
                 <div id="stats-insights" class="space-y-2"></div>
             </div>
 
             <!-- Tableau mensuel -->
             <div class="bg-white rounded-2xl shadow-md p-4">
                 <div class="flex items-center justify-between mb-3">
-                    <h3 class="text-sm font-semibold text-gray-800">Detail mensuel</h3>
+                    <h3 class="text-sm font-semibold text-gray-800" data-i18n="monthly_detail">Detail mensuel</h3>
                     <button id="btn-export-stats-csv" class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">CSV</button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm" id="monthly-stats-table">
                         <thead>
                             <tr class="text-left text-xs text-gray-500 uppercase">
-                                <th class="pb-2">Mois</th>
-                                <th class="pb-2">Jours</th>
-                                <th class="pb-2">Clients</th>
+                                <th class="pb-2" data-i18n="month">Mois</th>
+                                <th class="pb-2" data-i18n="total_days">Jours</th>
+                                <th class="pb-2" data-i18n="total_clients">Clients</th>
                             </tr>
                         </thead>
                         <tbody id="monthly-stats-body" class="divide-y divide-gray-100"></tbody>
@@ -441,13 +441,13 @@
     <!-- Page Export -->
     <div id="page-export" class="page hidden min-h-screen">
         <header class="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-6 shadow-lg">
-            <h1 class="text-2xl font-bold text-center">Export & Partage</h1>
+            <h1 class="text-2xl font-bold text-center" data-i18n="export_title">Export & Partage</h1>
         </header>
 
         <div class="px-4 py-4 max-w-lg mx-auto space-y-4">
             <!-- Periode -->
             <div class="bg-white rounded-2xl shadow-md p-4">
-                <h3 class="text-sm font-semibold text-gray-800 mb-3">📅 Periode</h3>
+                <h3 class="text-sm font-semibold text-gray-800 mb-3">📅 <span data-i18n="export_period">Periode</span></h3>
                 <select id="export-period" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white text-sm">
                     <option value="this-month" selected>Ce mois</option>
                     <option value="last-month">Mois dernier</option>
@@ -466,10 +466,10 @@
 
             <!-- Recap -->
             <div class="bg-white rounded-2xl shadow-md p-4">
-                <h3 class="text-sm font-semibold text-gray-800 mb-3">📋 Recapitulatif</h3>
+                <h3 class="text-sm font-semibold text-gray-800 mb-3">📋 <span data-i18n="export_recap">Recapitulatif</span></h3>
                 <label class="flex items-center gap-2 text-sm text-gray-600 mb-3 cursor-pointer">
                     <input type="checkbox" id="show-detailed-view" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                    <span>Afficher le detail</span>
+                    <span data-i18n="show_detail">Afficher le detail</span>
                 </label>
                 <div id="export-preview" class="text-sm"></div>
                 <div id="export-total" class="mt-3 pt-3 border-t text-right font-semibold text-blue-600"></div>
@@ -477,19 +477,19 @@
 
             <!-- Boutons partage -->
             <div class="bg-white rounded-2xl shadow-md p-4">
-                <h3 class="text-sm font-semibold text-gray-800 mb-3">Partager</h3>
+                <h3 class="text-sm font-semibold text-gray-800 mb-3" data-i18n="share">Partager</h3>
                 <div class="grid grid-cols-4 gap-2">
                     <button id="btn-copy-recap" class="share-btn flex flex-col items-center justify-center gap-2 p-4 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all hover:scale-105">
                         <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
                         </svg>
-                        <span class="text-xs font-medium text-gray-600">Copier</span>
+                        <span class="text-xs font-medium text-gray-600" data-i18n="copy">Copier</span>
                     </button>
                     <button id="btn-email-recap" class="share-btn flex flex-col items-center justify-center gap-2 p-4 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all hover:scale-105">
                         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                         </svg>
-                        <span class="text-xs font-medium text-blue-600">Email</span>
+                        <span class="text-xs font-medium text-blue-600" data-i18n="email">Email</span>
                     </button>
                     <button id="btn-share-whatsapp" class="share-btn flex flex-col items-center justify-center gap-2 p-4 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all hover:scale-105">
                         <svg class="w-6 h-6" viewBox="0 0 24 24" fill="#25D366">
@@ -523,7 +523,7 @@
     <!-- Page Reglages -->
     <div id="page-settings" class="page hidden min-h-screen">
         <header class="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-6 shadow-lg">
-            <h1 class="text-2xl font-bold text-center">Reglages</h1>
+            <h1 class="text-2xl font-bold text-center" data-i18n="settings_title">Reglages</h1>
         </header>
 
         <div class="px-4 py-4 max-w-lg mx-auto space-y-4">

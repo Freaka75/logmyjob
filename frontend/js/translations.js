@@ -187,7 +187,18 @@ const translations = {
         close: 'Fermer',
         save: 'Sauvegarder',
         loading: 'Chargement...',
-        no_data: 'Aucune donnee'
+        no_data: 'Aucune donnee',
+
+        // Additional UI
+        bill_next_month: 'Facturer le mois prochain',
+        add_vacation_title: 'Ajouter des conges',
+        details: 'Details',
+        full_day: 'Journee complete',
+        half_morning: 'Matin (0.5j)',
+        half_afternoon: 'Apres-midi (0.5j)',
+        deferred_from: 'Jour reporte du mois precedent',
+        billed_in: 'Facture',
+        no_entry_today: 'Aucune donnee pour ce jour'
     },
 
     en: {
@@ -376,7 +387,18 @@ const translations = {
         close: 'Close',
         save: 'Save',
         loading: 'Loading...',
-        no_data: 'No data'
+        no_data: 'No data',
+
+        // Additional UI
+        bill_next_month: 'Bill next month',
+        add_vacation_title: 'Add vacation',
+        details: 'Details',
+        full_day: 'Full day',
+        half_morning: 'Morning (0.5d)',
+        half_afternoon: 'Afternoon (0.5d)',
+        deferred_from: 'Day deferred from previous month',
+        billed_in: 'Billed in',
+        no_entry_today: 'No data for this day'
     }
 };
 
@@ -449,24 +471,6 @@ function applyTranslations() {
         el.placeholder = t(key);
     });
 
-    // Page titles
-    const pageTitles = {
-        'page-home': 'home_title',
-        'page-calendar': 'calendar_title',
-        'page-history': 'history_title',
-        'page-stats': 'stats_title',
-        'page-export': 'export_title',
-        'page-settings': 'settings_title'
-    };
-
-    Object.entries(pageTitles).forEach(([pageId, key]) => {
-        const page = document.getElementById(pageId);
-        if (page) {
-            const header = page.querySelector('header h1');
-            if (header) header.textContent = t(key);
-        }
-    });
-
     // Update select options for periods
     updateSelectOptions('filter-period', {
         'all': 'period_all',
@@ -496,6 +500,9 @@ function applyTranslations() {
 
     // Update language selector UI
     updateLanguageUI();
+
+    // Trigger custom event for dynamic content
+    window.dispatchEvent(new CustomEvent('translationsApplied'));
 }
 
 function updateSelectOptions(selectId, optionKeys) {
