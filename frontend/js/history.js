@@ -312,11 +312,16 @@ function createPresenceItem(presence) {
         month: '2-digit'
     });
 
+    // Badge pour jours differes
+    const deferredBadge = presence.billing_month
+        ? `<span class="deferred-badge">Fact. ${formatBillingMonthShort(presence.billing_month)}</span>`
+        : '';
+
     item.innerHTML = `
         <div class="presence-checkbox">
             <input type="checkbox" data-id="${presence.id}" class="presence-select">
         </div>
-        <div class="presence-date">${formattedDate}</div>
+        <div class="presence-date">${formattedDate} ${deferredBadge}</div>
         <div class="presence-client">
             <span class="client-color-dot" style="background-color: ${clientColor}"></span>
             ${presence.client}
@@ -376,10 +381,13 @@ function renderCompactView(presences) {
     const tbody = table.querySelector('#compact-tbody');
     presences.sort((a, b) => b.date.localeCompare(a.date)).forEach(presence => {
         const clientColor = getClientColor(presence.client);
+        const deferredBadge = presence.billing_month
+            ? `<span class="deferred-badge">Fact. ${formatBillingMonthShort(presence.billing_month)}</span>`
+            : '';
         const row = document.createElement('tr');
         row.innerHTML = `
             <td><input type="checkbox" data-id="${presence.id}" class="presence-select"></td>
-            <td>${formatDate(presence.date)}</td>
+            <td>${formatDate(presence.date)} ${deferredBadge}</td>
             <td><span class="client-color-dot" style="background-color: ${clientColor}"></span> ${presence.client}</td>
             <td>${getDurationIcon(presence.duree)} ${formatDurationShort(presence.duree)}</td>
             <td class="notes-cell">${presence.notes || '-'}</td>
@@ -410,10 +418,13 @@ function renderTimelineView(presences) {
 
     presences.sort((a, b) => b.date.localeCompare(a.date)).forEach(presence => {
         const clientColor = getClientColor(presence.client);
+        const deferredBadge = presence.billing_month
+            ? `<span class="deferred-badge">Fact. ${formatBillingMonthShort(presence.billing_month)}</span>`
+            : '';
         const item = document.createElement('div');
         item.className = 'timeline-item';
         item.innerHTML = `
-            <div class="timeline-date">${formatDate(presence.date)}</div>
+            <div class="timeline-date">${formatDate(presence.date)} ${deferredBadge}</div>
             <div class="timeline-dot" style="background-color: ${clientColor}; box-shadow: 0 0 0 2px ${clientColor}"></div>
             <div class="timeline-content">
                 <div class="timeline-client" style="color: ${clientColor}">${presence.client}</div>
@@ -529,4 +540,12 @@ function formatDurationShort(duree) {
     if (duree === 'demi_journee_matin') return '0.5j';
     if (duree === 'demi_journee_aprem') return '0.5j';
     return duree;
+}
+
+// Formater le mois de facturation en version courte
+function formatBillingMonthShort(monthStr) {
+    if (!monthStr) return '';
+    const [year, month] = monthStr.split('-');
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aout', 'Sept', 'Oct', 'Nov', 'Dec'];
+    return `${monthNames[parseInt(month) - 1]} ${year}`;
 }
