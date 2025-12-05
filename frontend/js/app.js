@@ -78,6 +78,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadAssistantSettings();
     checkCurrentVacation();
     requestNotificationPermission();
+
+    // Vérifier si une notification a été manquée
+    setTimeout(() => {
+        checkMissedNotification();
+    }, 2000); // Attendre que le SW soit prêt
 });
 
 // ============ GESTION DE LA LANGUE ============
@@ -1026,6 +1031,15 @@ function scheduleNotifications() {
             type: 'SCHEDULE_NOTIFICATIONS',
             settings: notificationSettings,
             vacations: vacations
+        });
+    }
+}
+
+// Vérifier si une notification a été manquée (appelé au chargement)
+function checkMissedNotification() {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+            type: 'CHECK_NOTIFICATION'
         });
     }
 }

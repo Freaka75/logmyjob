@@ -1,4 +1,4 @@
-const CACHE_NAME = 'log-my-job-v39';
+const CACHE_NAME = 'log-my-job-v40';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -95,10 +95,6 @@ function getTodayDate() {
 // Fonction pour vérifier si on est en période de congés
 async function isOnVacation() {
   try {
-    // Récupérer les congés depuis localStorage via IndexedDB ou Cache API
-    // Note: Service Worker n'a pas accès direct à localStorage
-    // On utilise une approche alternative via postMessage ou Cache API
-
     const cache = await caches.open(CACHE_NAME);
     const vacationsResponse = await cache.match('/vacations-data');
 
@@ -118,17 +114,87 @@ async function isOnVacation() {
   }
 }
 
-// Variables pour la planification
-let notificationSettings = null;
-let notificationTimer = null;
+// Charger les paramètres depuis le cache
+async function loadNotificationSettings() {
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    const settingsResponse = await cache.match('/notification-settings');
+    if (settingsResponse) {
+      return await settingsResponse.json();
+    }
+  } catch (error) {
+    console.error('Erreur chargement paramètres:', error);
+  }
+  return null;
+}
+
+// Sauvegarder la dernière notification envoyée
+async function saveLastNotificationDate(date) {
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    const response = new Response(JSON.stringify({ date }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    await cache.put('/last-notification-date', response);
+  } catch (error) {
+    console.error('Erreur sauvegarde date notification:', error);
+  }
+}
+
+// Charger la dernière date de notification
+async function getLastNotificationDate() {
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    const response = await cache.match('/last-notification-date');
+    if (response) {
+      const data = await response.json();
+      return data.date;
+    }
+  } catch (error) {
+    console.error('Erreur chargement date notification:', error);
+  }
+  return null;
+}
+
+// Vérifier si une notification doit être envoyée
+async function shouldSendNotification(settings) {
+  if (!settings || !settings.enabled) return false;
+
+  const now = new Date();
+  const today = getTodayDate();
+  const currentDay = now.getDay();
+
+  // Vérifier si c'est un jour actif
+  if (!settings.weekdays.includes(currentDay)) return false;
+
+  // Vérifier l'heure
+  const [targetHours, targetMinutes] = settings.time.split(':').map(Number);
+  const currentHours = now.getHours();
+  const currentMinutes = now.getMinutes();
+
+  // On est après l'heure programmée ?
+  const isPastTime = (currentHours > targetHours) ||
+                     (currentHours === targetHours && currentMinutes >= targetMinutes);
+
+  if (!isPastTime) return false;
+
+  // Vérifier si on a déjà envoyé une notification aujourd'hui
+  const lastDate = await getLastNotificationDate();
+  if (lastDate === today) return false;
+
+  // Vérifier les congés
+  const onVacation = await isOnVacation();
+  if (onVacation) return false;
+
+  return true;
+}
 
 // Écouter les messages du client
 self.addEventListener('message', async (event) => {
-  const { type, data } = event.data;
+  const { type } = event.data;
 
   switch (type) {
     case 'UPDATE_VACATIONS':
-      // Stocker les congés dans le cache
       const vacationsCache = await caches.open(CACHE_NAME);
       const vacationsResponse = new Response(JSON.stringify(event.data.vacations), {
         headers: { 'Content-Type': 'application/json' }
@@ -137,93 +203,64 @@ self.addEventListener('message', async (event) => {
       break;
 
     case 'UPDATE_NOTIFICATION_SETTINGS':
-      // Stocker les paramètres de notifications
-      notificationSettings = event.data.settings;
+    case 'SCHEDULE_NOTIFICATIONS':
       const settingsCache = await caches.open(CACHE_NAME);
       const settingsResponse = new Response(JSON.stringify(event.data.settings), {
         headers: { 'Content-Type': 'application/json' }
       });
       await settingsCache.put('/notification-settings', settingsResponse);
-      break;
 
-    case 'SCHEDULE_NOTIFICATIONS':
-      // Planifier les notifications
-      notificationSettings = event.data.settings;
-      await scheduleNextNotification();
+      // Enregistrer pour periodic sync si disponible
+      if ('periodicSync' in self.registration) {
+        try {
+          await self.registration.periodicSync.register('daily-notification', {
+            minInterval: 60 * 60 * 1000 // 1 heure minimum
+          });
+          console.log('Periodic sync enregistré');
+        } catch (error) {
+          console.log('Periodic sync non disponible:', error);
+        }
+      }
+
+      // Vérifier immédiatement si une notification est due
+      await checkAndSendNotification();
       break;
 
     case 'CANCEL_NOTIFICATIONS':
-      // Annuler les notifications planifiées
-      if (notificationTimer) {
-        clearTimeout(notificationTimer);
-        notificationTimer = null;
+      if ('periodicSync' in self.registration) {
+        try {
+          await self.registration.periodicSync.unregister('daily-notification');
+        } catch (error) {
+          console.log('Erreur unregister periodic sync:', error);
+        }
       }
+      break;
+
+    case 'CHECK_NOTIFICATION':
+      // Appelé quand l'app s'ouvre - vérifier si notification manquée
+      await checkAndSendNotification();
       break;
   }
 });
 
-// Fonction pour planifier la prochaine notification
-async function scheduleNextNotification() {
-  if (!notificationSettings || !notificationSettings.enabled) {
-    return;
-  }
+// Vérifier et envoyer la notification si nécessaire
+async function checkAndSendNotification() {
+  const settings = await loadNotificationSettings();
 
-  // Charger les paramètres depuis le cache si pas en mémoire
-  if (!notificationSettings) {
-    const cache = await caches.open(CACHE_NAME);
-    const settingsResponse = await cache.match('/notification-settings');
-    if (settingsResponse) {
-      notificationSettings = await settingsResponse.json();
-    }
-  }
-
-  if (!notificationSettings || !notificationSettings.enabled) {
-    return;
-  }
-
-  // Calculer le temps jusqu'à la prochaine notification
-  const now = new Date();
-  const [hours, minutes] = notificationSettings.time.split(':');
-
-  let nextNotification = new Date();
-  nextNotification.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
-  // Si l'heure est déjà passée aujourd'hui, planifier pour demain
-  if (nextNotification <= now) {
-    nextNotification.setDate(nextNotification.getDate() + 1);
-  }
-
-  // Vérifier si le jour est actif
-  while (!notificationSettings.weekdays.includes(nextNotification.getDay())) {
-    nextNotification.setDate(nextNotification.getDate() + 1);
-  }
-
-  const delay = nextNotification.getTime() - now.getTime();
-
-  // Annuler le timer précédent
-  if (notificationTimer) {
-    clearTimeout(notificationTimer);
-  }
-
-  // Planifier la notification
-  notificationTimer = setTimeout(async () => {
+  if (await shouldSendNotification(settings)) {
     await sendDailyReminder();
-    // Planifier la suivante
-    await scheduleNextNotification();
-  }, delay);
-
-  console.log('Prochaine notification planifiée pour:', nextNotification);
+  }
 }
+
+// Periodic Background Sync (Chrome Android principalement)
+self.addEventListener('periodicsync', async (event) => {
+  if (event.tag === 'daily-notification') {
+    event.waitUntil(checkAndSendNotification());
+  }
+});
 
 // Fonction pour envoyer une notification
 async function sendDailyReminder() {
-  // Vérifier les congés
-  const onVacation = await isOnVacation();
-  if (onVacation) {
-    console.log('En congés - notification annulée');
-    return;
-  }
-
   // Vérifier les permissions
   if (!self.registration || !self.registration.showNotification) {
     console.log('Notifications non supportées');
@@ -243,6 +280,9 @@ async function sendDailyReminder() {
         url: '/'
       }
     });
+
+    // Marquer comme envoyé aujourd'hui
+    await saveLastNotificationDate(getTodayDate());
     console.log('Notification quotidienne envoyée');
   } catch (error) {
     console.error('Erreur envoi notification:', error);
