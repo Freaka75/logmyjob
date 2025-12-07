@@ -300,6 +300,30 @@
                 </button>
             </form>
 
+            <!-- Formulaire verification OTP -->
+            <form id="otp-form" class="auth-form">
+                <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 14px;">
+                    Un code a 6 chiffres a ete envoye a <strong id="otp-email-display"></strong>.<br>
+                    Entrez-le ci-dessous ou cliquez sur le lien dans l'email.
+                </p>
+                <div class="form-group">
+                    <label for="otp-code">Code de verification</label>
+                    <input type="text" id="otp-code" required maxlength="6" pattern="[0-9]{6}"
+                           inputmode="numeric" autocomplete="one-time-code"
+                           placeholder="000000"
+                           style="text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: bold;">
+                </div>
+                <button type="submit" class="auth-btn auth-btn-primary">
+                    Verifier le code
+                </button>
+                <button type="button" id="resend-otp" class="auth-btn auth-btn-secondary" style="margin-top: 8px;">
+                    Renvoyer le code
+                </button>
+                <button type="button" id="back-to-magic-link" class="auth-btn auth-btn-secondary" style="margin-top: 8px;">
+                    Changer d'email
+                </button>
+            </form>
+
             <!-- Formulaire mot de passe oublie -->
             <form id="forgot-form" class="auth-form">
                 <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 14px;">
@@ -464,6 +488,8 @@
         });
 
         // Magic Link
+        let magicLinkEmail = '';
+
         document.getElementById('magic-link-btn').addEventListener('click', () => {
             forms.forEach(f => f.classList.remove('active'));
             document.getElementById('magic-link-form').classList.add('active');
@@ -484,8 +510,16 @@
 
             try {
                 await auth.signInWithMagicLink(email);
-                showSuccess('Email envoye ! Cliquez sur le lien dans votre email pour vous connecter.');
+                magicLinkEmail = email;
                 setLoading(form, false);
+
+                // Afficher le formulaire OTP
+                forms.forEach(f => f.classList.remove('active'));
+                document.getElementById('otp-form').classList.add('active');
+                document.getElementById('otp-email-display').textContent = email;
+                document.getElementById('otp-code').value = '';
+                document.getElementById('otp-code').focus();
+                showSuccess('Code envoye ! Verifiez votre email.');
             } catch (error) {
                 showError(error.message || 'Erreur lors de l\'envoi');
                 setLoading(form, false);
@@ -496,6 +530,65 @@
             forms.forEach(f => f.classList.remove('active'));
             document.getElementById('login-form').classList.add('active');
             tabs[0].classList.add('active');
+            hideMessages();
+        });
+
+        // OTP Verification
+        document.getElementById('otp-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const code = document.getElementById('otp-code').value.trim();
+            const form = e.target;
+            const btn = form.querySelector('button[type="submit"]');
+            btn.dataset.originalText = btn.textContent;
+
+            if (code.length !== 6 || !/^\d+$/.test(code)) {
+                showError('Le code doit contenir 6 chiffres');
+                return;
+            }
+
+            setLoading(form, true);
+
+            try {
+                const supabase = getSupabase();
+                const { data, error } = await supabase.auth.verifyOtp({
+                    email: magicLinkEmail,
+                    token: code,
+                    type: 'email'
+                });
+
+                if (error) throw error;
+
+                showSuccess('Connexion reussie !');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 500);
+            } catch (error) {
+                showError(error.message || 'Code invalide ou expire');
+                setLoading(form, false);
+            }
+        });
+
+        document.getElementById('resend-otp').addEventListener('click', async () => {
+            hideMessages();
+
+            if (!magicLinkEmail) {
+                showError('Veuillez d\'abord entrer votre email');
+                return;
+            }
+
+            try {
+                await auth.signInWithMagicLink(magicLinkEmail);
+                showSuccess('Nouveau code envoye !');
+            } catch (error) {
+                showError(error.message || 'Erreur lors de l\'envoi');
+            }
+        });
+
+        document.getElementById('back-to-magic-link').addEventListener('click', () => {
+            forms.forEach(f => f.classList.remove('active'));
+            document.getElementById('magic-link-form').classList.add('active');
             hideMessages();
         });
 
