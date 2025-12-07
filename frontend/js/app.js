@@ -71,6 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initNotifications();
     initAssistant();
     initBackup();
+    initOfflineMode();
 
     await loadData();
     await loadVacations();
@@ -1648,3 +1649,229 @@ function getAllClients() {
 function getAllVacations() {
     return vacations;
 }
+
+// ============ GESTION DU MODE HORS LIGNE ============
+
+let isOnline = navigator.onLine;
+
+function initOfflineMode() {
+    // Setup online/offline event listeners
+    window.addEventListener('online', handleOnlineStatus);
+    window.addEventListener('offline', handleOfflineStatus);
+
+    // Listen for offline sync events
+    window.addEventListener('offline-sync-complete', handleSyncComplete);
+    window.addEventListener('show-toast', handleShowToast);
+    window.addEventListener('background-sync-status', handleBackgroundSyncStatus);
+
+    // Setup sync button
+    const syncBtn = document.getElementById('btn-force-sync');
+    if (syncBtn) {
+        syncBtn.addEventListener('click', handleForceSyncClick);
+    }
+
+    // Setup service worker message listener
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+    }
+
+    // Initial state check
+    updateOfflineBanner();
+    updatePendingSyncCount();
+}
+
+function handleOnlineStatus() {
+    isOnline = true;
+    document.body.classList.remove('offline');
+    updateOfflineBanner();
+
+    // Trigger sync if we have OfflineSync module
+    if (typeof OfflineSync !== 'undefined') {
+        setTimeout(async () => {
+            const count = await OfflineSync.getQueueCount();
+            if (count > 0) {
+                showToast('Synchronisation des modifications...', 'info');
+                OfflineSync.processQueue();
+            }
+        }, 1000);
+    }
+
+    // Refresh data when back online
+    setTimeout(async () => {
+        try {
+            await loadData();
+            await loadVacations();
+            showToast('Connexion retablie', 'success');
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+        }
+    }, 2000);
+}
+
+function handleOfflineStatus() {
+    isOnline = false;
+    document.body.classList.add('offline');
+    updateOfflineBanner();
+    showToast('Mode hors ligne active', 'warning');
+}
+
+function updateOfflineBanner() {
+    const banner = document.getElementById('offline-banner');
+    const syncBtn = document.getElementById('btn-force-sync');
+
+    if (!banner) return;
+
+    if (!isOnline) {
+        banner.classList.remove('hidden');
+
+        // Show sync button for iOS/Safari that need manual sync
+        if (typeof OfflineSync !== 'undefined' && OfflineSync.needsIndexedDBFallback()) {
+            if (syncBtn) syncBtn.classList.remove('hidden');
+        }
+    } else {
+        banner.classList.add('hidden');
+    }
+
+    updatePendingSyncCount();
+}
+
+async function updatePendingSyncCount() {
+    const countBadge = document.getElementById('pending-sync-count');
+    if (!countBadge) return;
+
+    if (typeof OfflineSync !== 'undefined') {
+        try {
+            const count = await OfflineSync.getQueueCount();
+            if (count > 0) {
+                countBadge.textContent = count;
+                countBadge.classList.remove('hidden');
+            } else {
+                countBadge.classList.add('hidden');
+            }
+        } catch (error) {
+            countBadge.classList.add('hidden');
+        }
+    } else {
+        countBadge.classList.add('hidden');
+    }
+}
+
+async function handleForceSyncClick() {
+    const syncBtn = document.getElementById('btn-force-sync');
+    if (!syncBtn || !isOnline) {
+        showToast('Vous devez etre connecte pour synchroniser', 'error');
+        return;
+    }
+
+    syncBtn.classList.add('syncing');
+    syncBtn.disabled = true;
+
+    try {
+        if (typeof OfflineSync !== 'undefined') {
+            const results = await OfflineSync.processQueue();
+
+            if (results.processed > 0) {
+                showToast(`${results.processed} modification(s) synchronisee(s)`, 'success');
+                await loadData(); // Refresh data
+            } else if (results.failed > 0) {
+                showToast(`${results.failed} modification(s) echouee(s)`, 'error');
+            } else {
+                showToast('Aucune modification en attente', 'info');
+            }
+        }
+
+        // Also trigger service worker sync if available
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+                type: 'FORCE_SYNC'
+            });
+        }
+    } catch (error) {
+        console.error('Sync error:', error);
+        showToast('Erreur lors de la synchronisation', 'error');
+    } finally {
+        syncBtn.classList.remove('syncing');
+        syncBtn.disabled = false;
+        updatePendingSyncCount();
+    }
+}
+
+function handleSyncComplete(event) {
+    const { processed, failed } = event.detail;
+
+    if (processed > 0 && failed === 0) {
+        showToast(`${processed} modification(s) synchronisee(s)`, 'success');
+    } else if (failed > 0) {
+        showToast(`Synchronisation: ${processed} reussies, ${failed} echouees`, 'warning');
+    }
+
+    updatePendingSyncCount();
+
+    // Refresh UI after sync
+    loadData();
+}
+
+function handleShowToast(event) {
+    const { message, type } = event.detail;
+    showToast(message, type || 'info');
+}
+
+function handleBackgroundSyncStatus(event) {
+    const { supported } = event.detail;
+
+    // If background sync is not supported, show the sync button
+    if (!supported) {
+        const syncBtn = document.getElementById('btn-force-sync');
+        if (syncBtn && !isOnline) {
+            syncBtn.classList.remove('hidden');
+        }
+
+        // Add iOS-specific info
+        const banner = document.getElementById('offline-banner');
+        if (banner && !banner.querySelector('.ios-sync-info')) {
+            const info = document.createElement('p');
+            info.className = 'ios-sync-info';
+            info.innerHTML = '<strong>iOS/Safari:</strong> Synchronisation automatique non supportee. Utilisez le bouton Synchroniser quand vous etes connecte.';
+            banner.appendChild(info);
+        }
+    }
+}
+
+function handleServiceWorkerMessage(event) {
+    const { type, url, method } = event.data;
+
+    switch (type) {
+        case 'SYNC_COMPLETE':
+            showToast('Modification synchronisee', 'success');
+            updatePendingSyncCount();
+            loadData(); // Refresh data
+            break;
+
+        case 'REQUEST_QUEUED':
+            showToast('Modification mise en file d\'attente', 'info');
+            updatePendingSyncCount();
+            break;
+
+        case 'QUEUE_TO_INDEXEDDB':
+            // This is handled by offline-sync.js
+            break;
+
+        case 'SYNC_STATUS':
+            window.dispatchEvent(new CustomEvent('background-sync-status', {
+                detail: { supported: event.data.supported }
+            }));
+            break;
+    }
+}
+
+// Check background sync support on init
+function checkBackgroundSyncSupport() {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+            type: 'GET_SYNC_STATUS'
+        });
+    }
+}
+
+// Call this after SW is ready
+setTimeout(checkBackgroundSyncSupport, 3000);

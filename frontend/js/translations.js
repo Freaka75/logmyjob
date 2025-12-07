@@ -196,6 +196,11 @@ const translations = {
         full_day: 'Journee complete',
         half_morning: 'Matin (0.5j)',
         half_afternoon: 'Apres-midi (0.5j)',
+
+        // Offline mode
+        offline_mode: 'Mode hors ligne',
+        offline_desc: 'Vos modifications seront synchronisees automatiquement.',
+        sync_now: 'Synchroniser',
         deferred_from: 'Jour reporte du mois precedent',
         billed_in: 'Facture',
         no_entry_today: 'Aucune donnee pour ce jour'
@@ -393,6 +398,11 @@ const translations = {
         bill_next_month: 'Bill next month',
         add_vacation_title: 'Add vacation',
         details: 'Details',
+
+        // Offline mode
+        offline_mode: 'Offline mode',
+        offline_desc: 'Your changes will be synced automatically.',
+        sync_now: 'Sync now',
         full_day: 'Full day',
         half_morning: 'Morning (0.5d)',
         half_afternoon: 'Afternoon (0.5d)',

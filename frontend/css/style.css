@@ -922,3 +922,153 @@ body.dark {
     font-weight: 500;
     vertical-align: middle;
 }
+
+/* ============ OFFLINE MODE STYLES ============ */
+
+/* Offline banner animation */
+#offline-banner {
+    animation: slideDown 0.3s ease-out;
+}
+
+#offline-banner.show {
+    display: block !important;
+}
+
+/* Pulse animation for pending sync count */
+@keyframes pulse-amber {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+#pending-sync-count:not(.hidden) {
+    animation: pulse-amber 2s ease-in-out infinite;
+}
+
+/* Sync button loading state */
+#btn-force-sync.syncing {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+#btn-force-sync.syncing::after {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-left: 6px;
+    border: 2px solid white;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Toast notifications for sync */
+.toast-info {
+    background-color: #3b82f6 !important;
+}
+
+.toast-warning {
+    background-color: #f59e0b !important;
+}
+
+/* Offline indicator in header */
+.offline-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: rgba(245, 158, 11, 0.2);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #fcd34d;
+}
+
+.offline-indicator::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: #f59e0b;
+    border-radius: 50%;
+    animation: pulse-amber 1.5s ease-in-out infinite;
+}
+
+/* Form elements disabled state when offline */
+body.offline button[type="submit"]:not(.allow-offline),
+body.offline .share-btn:not(.allow-offline) {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Dark mode adjustments for offline banner */
+.dark #offline-banner {
+    background-color: rgba(245, 158, 11, 0.15) !important;
+    border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+.dark #offline-banner .text-amber-800 {
+    color: #fcd34d !important;
+}
+
+.dark #offline-banner .text-amber-700 {
+    color: #fbbf24 !important;
+}
+
+.dark #offline-banner .bg-amber-200 {
+    background-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+.dark #btn-force-sync {
+    background-color: #d97706;
+}
+
+.dark #btn-force-sync:hover {
+    background-color: #b45309;
+}
+
+/* iOS-specific sync button styles */
+.ios-sync-info {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 8px;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.ios-sync-info strong {
+    color: var(--primary);
+}
+
+/* Queued items indicator */
+.queued-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.dark .queued-badge {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fcd34d;
+}
+
+.queued-badge::before {
+    content: '⏳';
+    font-size: 10px;
+}

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hors ligne - Log My Job</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#4f46e5">
+  <link rel="icon" type="image/png" href="/icons/icon-192x192.png">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .offline-container {
+      background: white;
+      border-radius: 24px;
+      padding: 48px 32px;
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .offline-icon {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 24px;
+      background: #f3f4f6;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .offline-icon svg {
+      width: 64px;
+      height: 64px;
+      color: #9ca3af;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 12px;
+    }
+
+    p {
+      color: #6b7280;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    .retry-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+    }
+
+    .retry-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
+    }
+
+    .retry-button:active {
+      transform: translateY(0);
+    }
+
+    .retry-button svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .retry-button.loading svg {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .status-message {
+      margin-top: 24px;
+      padding: 12px 16px;
+      background: #fef3c7;
+      color: #92400e;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .status-message.show {
+      display: block;
+    }
+
+    .status-message.online {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .pending-info {
+      margin-top: 24px;
+      padding: 16px;
+      background: #eff6ff;
+      border-radius: 12px;
+      display: none;
+    }
+
+    .pending-info.show {
+      display: block;
+    }
+
+    .pending-info h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e40af;
+      margin-bottom: 8px;
+    }
+
+    .pending-info p {
+      font-size: 13px;
+      color: #3b82f6;
+      margin-bottom: 0;
+    }
+
+    .app-logo {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-container">
+    <div class="offline-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
+      </svg>
+    </div>
+
+    <div class="app-logo">📋</div>
+    <h1>Vous êtes hors ligne</h1>
+    <p>
+      Pas de connexion internet détectée. Vos modifications sont sauvegardées localement et seront synchronisées automatiquement.
+    </p>
+
+    <button class="retry-button" onclick="retryConnection()">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+      <span>Réessayer</span>
+    </button>
+
+    <div id="status-message" class="status-message"></div>
+
+    <div id="pending-info" class="pending-info">
+      <h3>📦 Modifications en attente</h3>
+      <p id="pending-count">0 modification(s) seront synchronisées</p>
+    </div>
+  </div>
+
+  <script>
+    // Check for pending offline requests
+    async function checkPendingRequests() {
+      try {
+        const db = await openIndexedDB();
+        const count = await getRequestCount(db);
+
+        const pendingInfo = document.getElementById('pending-info');
+        const pendingCount = document.getElementById('pending-count');
+
+        if (count > 0) {
+          pendingInfo.classList.add('show');
+          pendingCount.textContent = `${count} modification(s) seront synchronisées`;
+        }
+      } catch (error) {
+        console.error('Error checking pending requests:', error);
+      }
+    }
+
+    function openIndexedDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('logmyjob-offline', 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains('pending-requests')) {
+            db.createObjectStore('pending-requests', { keyPath: 'id', autoIncrement: true });
+          }
+        };
+      });
+    }
+
+    function getRequestCount(db) {
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['pending-requests'], 'readonly');
+        const store = transaction.objectStore('pending-requests');
+        const countRequest = store.count();
+        countRequest.onsuccess = () => resolve(countRequest.result);
+        countRequest.onerror = () => reject(countRequest.error);
+      });
+    }
+
+    function retryConnection() {
+      const button = document.querySelector('.retry-button');
+      const statusMessage = document.getElementById('status-message');
+
+      button.classList.add('loading');
+      button.disabled = true;
+
+      // Check if we're back online
+      if (navigator.onLine) {
+        statusMessage.textContent = 'Connexion rétablie ! Redirection...';
+        statusMessage.className = 'status-message show online';
+
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+      } else {
+        // Try to fetch the main page
+        fetch('/', { method: 'HEAD', cache: 'no-store' })
+          .then(() => {
+            statusMessage.textContent = 'Connexion rétablie ! Redirection...';
+            statusMessage.className = 'status-message show online';
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 1000);
+          })
+          .catch(() => {
+            statusMessage.textContent = 'Toujours hors ligne. Réessayez plus tard.';
+            statusMessage.className = 'status-message show';
+            button.classList.remove('loading');
+            button.disabled = false;
+          });
+      }
+    }
+
+    // Listen for online event
+    window.addEventListener('online', () => {
+      const statusMessage = document.getElementById('status-message');
+      statusMessage.textContent = 'Connexion rétablie ! Redirection...';
+      statusMessage.className = 'status-message show online';
+
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
+    });
+
+    // Check pending requests on load
+    checkPendingRequests();
+  </script>
+</body>
+</html>

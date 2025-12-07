@@ -1,87 +1,230 @@
-const CACHE_NAME = 'log-my-job-v41';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/auth.html',
-  '/css/style.css',
-  '/js/config.js',
-  '/js/supabase-client.js',
-  '/js/auth.js',
-  '/js/api.js',
-  '/js/translations.js',
-  '/js/app.js',
-  '/js/calendar.js',
-  '/js/history.js',
-  '/js/export.js',
-  '/js/stats.js',
-  '/manifest.json'
-];
+// Import Workbox from CDN
+importScripts('https://storage.googleapis.com/workbox-cdn/releases/7.0.0/workbox-sw.js');
 
-// Installation du Service Worker
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Cache ouvert');
-        return cache.addAll(urlsToCache);
+const CACHE_VERSION = 'v42';
+const CACHE_NAME = `log-my-job-${CACHE_VERSION}`;
+
+// Configure Workbox
+workbox.setConfig({ debug: false });
+
+const { registerRoute, NavigationRoute, setDefaultHandler } = workbox.routing;
+const { CacheFirst, NetworkFirst, StaleWhileRevalidate } = workbox.strategies;
+const { ExpirationPlugin } = workbox.expiration;
+const { CacheableResponsePlugin } = workbox.cacheableResponse;
+const { BackgroundSyncPlugin } = workbox.backgroundSync;
+const { precacheAndRoute, cleanupOutdatedCaches } = workbox.precaching;
+
+// ============ PRECACHING ============
+
+// Clean up old caches
+cleanupOutdatedCaches();
+
+// Precache core files
+precacheAndRoute([
+  { url: '/', revision: CACHE_VERSION },
+  { url: '/index.html', revision: CACHE_VERSION },
+  { url: '/auth.html', revision: CACHE_VERSION },
+  { url: '/offline.html', revision: CACHE_VERSION },
+  { url: '/css/style.css', revision: CACHE_VERSION },
+  { url: '/js/config.js', revision: CACHE_VERSION },
+  { url: '/js/supabase-client.js', revision: CACHE_VERSION },
+  { url: '/js/auth.js', revision: CACHE_VERSION },
+  { url: '/js/api.js', revision: CACHE_VERSION },
+  { url: '/js/translations.js', revision: CACHE_VERSION },
+  { url: '/js/app.js', revision: CACHE_VERSION },
+  { url: '/js/calendar.js', revision: CACHE_VERSION },
+  { url: '/js/history.js', revision: CACHE_VERSION },
+  { url: '/js/export.js', revision: CACHE_VERSION },
+  { url: '/js/stats.js', revision: CACHE_VERSION },
+  { url: '/js/offline-sync.js', revision: CACHE_VERSION },
+  { url: '/manifest.json', revision: CACHE_VERSION }
+]);
+
+// ============ RUNTIME CACHING STRATEGIES ============
+
+// Cache images with CacheFirst strategy
+registerRoute(
+  ({ request }) => request.destination === 'image',
+  new CacheFirst({
+    cacheName: 'images-cache',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({
+        maxEntries: 50,
+        maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
       })
-  );
-});
+    ]
+  })
+);
 
-// Activation du Service Worker
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Suppression ancien cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
-});
+// Cache Google Fonts with StaleWhileRevalidate
+registerRoute(
+  ({ url }) => url.origin === 'https://fonts.googleapis.com' ||
+               url.origin === 'https://fonts.gstatic.com',
+  new StaleWhileRevalidate({
+    cacheName: 'google-fonts',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({
+        maxEntries: 30,
+        maxAgeSeconds: 365 * 24 * 60 * 60 // 1 year
+      })
+    ]
+  })
+);
 
-// Interception des requêtes
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Retourner la ressource du cache si disponible
-        if (response) {
-          return response;
-        }
+// Cache CDN resources (Tailwind, etc.)
+registerRoute(
+  ({ url }) => url.origin === 'https://cdn.tailwindcss.com' ||
+               url.origin === 'https://cdn.jsdelivr.net',
+  new StaleWhileRevalidate({
+    cacheName: 'cdn-cache',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({
+        maxEntries: 20,
+        maxAgeSeconds: 7 * 24 * 60 * 60 // 7 days
+      })
+    ]
+  })
+);
 
-        // Sinon, faire la requête réseau
-        return fetch(event.request).then(response => {
-          // Ne pas mettre en cache les requêtes API
-          if (event.request.url.includes('/api/')) {
-            return response;
-          }
+// ============ BACKGROUND SYNC FOR API REQUESTS ============
 
-          // Vérifier si la réponse est valide
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
+// Check if Background Sync is supported
+const bgSyncSupported = 'sync' in self.registration;
 
-          // Cloner la réponse
-          const responseToCache = response.clone();
+// Background Sync plugin for failed API requests
+const bgSyncPlugin = bgSyncSupported ? new BackgroundSyncPlugin('api-queue', {
+  maxRetentionTime: 24 * 60, // 24 hours in minutes
+  onSync: async ({ queue }) => {
+    let entry;
+    while ((entry = await queue.shiftRequest())) {
+      try {
+        await fetch(entry.request.clone());
+        console.log('Background sync: request replayed successfully');
 
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-
-          return response;
+        // Notify the client of successful sync
+        const clients = await self.clients.matchAll();
+        clients.forEach(client => {
+          client.postMessage({
+            type: 'SYNC_COMPLETE',
+            url: entry.request.url
+          });
         });
+      } catch (error) {
+        console.error('Background sync failed:', error);
+        await queue.unshiftRequest(entry);
+        throw error;
+      }
+    }
+  }
+}) : null;
+
+// Handle Supabase API requests with NetworkFirst + Background Sync
+registerRoute(
+  ({ url }) => url.hostname.includes('supabase.co'),
+  async ({ request, event }) => {
+    const networkFirst = new NetworkFirst({
+      cacheName: 'api-cache',
+      networkTimeoutSeconds: 10,
+      plugins: [
+        new CacheableResponsePlugin({ statuses: [0, 200] })
+      ]
+    });
+
+    try {
+      const response = await networkFirst.handle({ request, event });
+      return response;
+    } catch (error) {
+      // If it's a mutation (POST, PUT, DELETE, PATCH), queue for background sync
+      if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)) {
+        if (bgSyncSupported && bgSyncPlugin) {
+          // Clone request before queuing
+          const clonedRequest = request.clone();
+          await bgSyncPlugin.queueDidFail?.({ request: clonedRequest });
+
+          // Notify client that request is queued
+          const clients = await self.clients.matchAll();
+          clients.forEach(client => {
+            client.postMessage({
+              type: 'REQUEST_QUEUED',
+              method: request.method,
+              url: request.url
+            });
+          });
+        } else {
+          // For iOS/Safari, notify client to use IndexedDB fallback
+          const clients = await self.clients.matchAll();
+          clients.forEach(client => {
+            client.postMessage({
+              type: 'QUEUE_TO_INDEXEDDB',
+              method: request.method,
+              url: request.url,
+              body: request.bodyUsed ? null : request.body
+            });
+          });
+        }
+      }
+      throw error;
+    }
+  }
+);
+
+// ============ OFFLINE FALLBACK ============
+
+// Handle navigation requests with offline fallback
+const navigationHandler = async ({ request }) => {
+  try {
+    return await new NetworkFirst({
+      cacheName: 'pages-cache',
+      networkTimeoutSeconds: 5
+    }).handle({ request });
+  } catch (error) {
+    const cache = await caches.open(CACHE_NAME);
+    const cachedResponse = await cache.match('/offline.html');
+    return cachedResponse || new Response('Offline', { status: 503 });
+  }
+};
+
+registerRoute(
+  ({ request }) => request.mode === 'navigate',
+  navigationHandler
+);
+
+// Default handler for other requests
+setDefaultHandler(new NetworkFirst({
+  cacheName: 'default-cache',
+  networkTimeoutSeconds: 10
+}));
+
+// ============ SERVICE WORKER LIFECYCLE ============
+
+// Skip waiting and claim clients immediately
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+  console.log('Service Worker installed');
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    Promise.all([
+      self.clients.claim(),
+      // Clean up old caches
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (!cacheName.includes(CACHE_VERSION) &&
+                !['images-cache', 'google-fonts', 'cdn-cache', 'api-cache'].includes(cacheName)) {
+              console.log('Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
       })
-      .catch(() => {
-        // En cas d'erreur, retourner une page offline si disponible
-        return caches.match('/index.html');
-      })
+    ])
   );
+  console.log('Service Worker activated');
 });
 
 // ============ GESTION DES NOTIFICATIONS ET CONGÉS ============
@@ -191,7 +334,7 @@ async function shouldSendNotification(settings) {
 
 // Écouter les messages du client
 self.addEventListener('message', async (event) => {
-  const { type } = event.data;
+  const { type, data } = event.data;
 
   switch (type) {
     case 'UPDATE_VACATIONS':
@@ -240,6 +383,32 @@ self.addEventListener('message', async (event) => {
       // Appelé quand l'app s'ouvre - vérifier si notification manquée
       await checkAndSendNotification();
       break;
+
+    case 'SKIP_WAITING':
+      self.skipWaiting();
+      break;
+
+    case 'GET_SYNC_STATUS':
+      // Return background sync support status
+      const clients = await self.clients.matchAll();
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'SYNC_STATUS',
+          supported: bgSyncSupported
+        });
+      });
+      break;
+
+    case 'FORCE_SYNC':
+      // Trigger manual sync for queued requests
+      if (bgSyncSupported && 'sync' in self.registration) {
+        try {
+          await self.registration.sync.register('api-queue');
+        } catch (error) {
+          console.error('Manual sync trigger failed:', error);
+        }
+      }
+      break;
   }
 });
 
@@ -256,6 +425,14 @@ async function checkAndSendNotification() {
 self.addEventListener('periodicsync', async (event) => {
   if (event.tag === 'daily-notification') {
     event.waitUntil(checkAndSendNotification());
+  }
+});
+
+// Background Sync event for API queue
+self.addEventListener('sync', async (event) => {
+  if (event.tag === 'api-queue') {
+    console.log('Background sync triggered for api-queue');
+    // Workbox BackgroundSyncPlugin handles this automatically
   }
 });
 
