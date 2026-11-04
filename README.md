@@ -37,6 +37,25 @@ Valeurs de `days.duration` : `journee_complete` (1 jour), `demi_journee_matin`, 
 Encore stockes dans le navigateur (`localStorage`) : couleurs des clients, reglages de notification,
 assistante, theme, langue.
 
+## Rappels (notifications push)
+
+- L'appareil s'abonne quand on active « Rappels quotidiens » (`frontend/js/push.js`) ;
+  l'abonnement est stocke dans `public.push_subscriptions`.
+- `supabase/functions/send-reminders/` (Edge Function) est appelee toutes les 10 min par `pg_cron`
+  (job `logmyjob-send-reminders`). Elle envoie un rappel si : rappels actives, jour coche, heure
+  atteinte (fuseau de l'appareil), aucun jour saisi, pas en conges, pas deja envoye ce jour.
+- Cles VAPID et secret du cron : table `private.push_config` (non exposee par l'API).
+  La cle publique est aussi dans `frontend/js/config.js`.
+- iPhone / iPad : l'application doit etre installee sur l'ecran d'accueil (iOS 16.4+).
+- Migration : `supabase/migrations/2026-11-04-push-notifications.sql`.
+- Deployer la fonction : copier `supabase/functions/send-reminders/index.ts` dans
+  `/data/coolify/services/<uuid pile PWA>/volumes/functions/send-reminders/` (pris en compte a la requete suivante).
+
+## Comptes
+
+Inscriptions fermees (`DISABLE_SIGNUP=true` dans la pile Supabase) : ajouter un utilisateur depuis
+Supabase Studio > Authentication > Add user / Invite.
+
 ## Lancer en local
 
 ```bash

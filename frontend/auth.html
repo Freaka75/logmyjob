@@ -226,7 +226,9 @@
                 <p>Suivi de presence client</p>
             </div>
 
-            <div class="auth-tabs">
+            <!-- Inscriptions fermees cote serveur (GOTRUE_DISABLE_SIGNUP) : comptes crees sur invitation.
+                 Pour les rouvrir : remettre DISABLE_SIGNUP=false et retirer le style ci-dessous. -->
+            <div class="auth-tabs" style="display: none">
                 <button class="auth-tab active" data-tab="login">Connexion</button>
                 <button class="auth-tab" data-tab="register">Inscription</button>
             </div>
@@ -262,6 +264,7 @@
                 <div class="forgot-password">
                     <a href="#" id="resend-confirmation-link">Email de confirmation non recu ?</a>
                 </div>
+                <p class="forgot-password" style="opacity: .7; font-size: 13px; margin-top: 12px">Accès sur invitation uniquement.</p>
             </form>
 
             <!-- Formulaire d'inscription -->

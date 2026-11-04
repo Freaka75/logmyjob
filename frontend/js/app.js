@@ -122,7 +122,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadNotificationSettings();
     loadAssistantSettings();
     checkCurrentVacation();
-    requestNotificationPermission();
+    if (notificationSettings.enabled) {
+        Push.refresh();
+    }
+
+    // Ouverture depuis une notification de rappel : formulaire de saisie directement.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'log') {
+        history.replaceState(null, '', window.location.pathname);
+        navigateTo('home');
+        showForm();
+    }
 
     // Vérifier si une notification a été manquée
     setTimeout(() => {
@@ -951,46 +961,41 @@ function initNotifications() {
     const btnTest = document.getElementById('btn-test-notification');
     const warning = document.getElementById('notification-warning');
 
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (!isLocalhost && warning) {
+    if (warning && Push.needsInstallFirst()) {
+        warning.classList.remove('hidden');
         warning.style.display = 'flex';
     }
 
     toggle.addEventListener('change', async () => {
         if (toggle.checked) {
-            const permission = await requestNotificationPermission();
-            if (permission === 'granted') {
+            try {
+                await Push.subscribe();
                 notificationSettings.enabled = true;
                 config.style.display = 'block';
                 saveNotificationSettings();
-                scheduleNotifications();
-            } else {
+                showToast('Rappels actives sur cet appareil', 'success');
+            } catch (error) {
+                console.error('Activation des rappels:', error);
                 toggle.checked = false;
-                showToast('Permission de notifications refusee', 'error');
+                showToast(error.message || 'Activation impossible', 'error');
             }
         } else {
             notificationSettings.enabled = false;
             config.style.display = 'none';
             saveNotificationSettings();
-            cancelNotifications();
+            await Push.unsubscribe();
         }
     });
 
     timeInput.addEventListener('change', () => {
         notificationSettings.time = timeInput.value;
         saveNotificationSettings();
-        if (notificationSettings.enabled) {
-            scheduleNotifications();
-        }
     });
 
     weekdayCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', () => {
             updateWeekdays();
             saveNotificationSettings();
-            if (notificationSettings.enabled) {
-                scheduleNotifications();
-            }
         });
     });
 
@@ -1039,14 +1044,7 @@ function loadNotificationSettings() {
 
 function saveNotificationSettings() {
     localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
-    Prefs.touch();
-
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-            type: 'UPDATE_NOTIFICATION_SETTINGS',
-            settings: notificationSettings
-        });
-    }
+    Prefs.touch(); // le serveur lit ces reglages (user_settings.preferences) pour envoyer les rappels
 }
 
 function updateWeekdays() {
@@ -1060,61 +1058,24 @@ function updateWeekdays() {
 }
 
 async function sendTestNotification() {
-    const permission = await requestNotificationPermission();
-
-    if (permission !== 'granted') {
-        showToast('Permission de notifications refusee', 'error');
-        return;
-    }
-
-    if ('serviceWorker' in navigator && 'showNotification' in ServiceWorkerRegistration.prototype) {
-        navigator.serviceWorker.ready.then(registration => {
-            registration.showNotification('Log My Job', {
-                body: 'N\'oublie pas de logger ta journee client !',
-                icon: '/icons/icon-192x192.png',
-                badge: '/icons/icon-72x72.png',
-                tag: 'test-notification',
-                requireInteraction: false,
-                vibrate: [200, 100, 200],
-                data: { url: '/' }
-            });
-        });
-        showToast('Notification de test envoyee', 'success');
-    } else {
-        new Notification('Log My Job', {
-            body: 'N\'oublie pas de logger ta journee client !',
-            icon: '/icons/icon-192x192.png'
-        });
-        showToast('Notification de test envoyee', 'success');
+    const btn = document.getElementById('btn-test-notification');
+    if (btn) btn.disabled = true;
+    try {
+        await Push.subscribe(); // garantit que cet appareil est bien abonne
+        const result = await Push.sendTest();
+        showToast(`Notification envoyee a ${result.sent} appareil(s)`, 'success');
+    } catch (error) {
+        console.error('Test notification:', error);
+        showToast(error.message || 'Echec du test', 'error');
+    } finally {
+        if (btn) btn.disabled = false;
     }
 }
 
-function scheduleNotifications() {
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-            type: 'SCHEDULE_NOTIFICATIONS',
-            settings: notificationSettings,
-            vacations: vacations
-        });
-    }
-}
-
-// Vérifier si une notification a été manquée (appelé au chargement)
-function checkMissedNotification() {
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-            type: 'CHECK_NOTIFICATION'
-        });
-    }
-}
-
-function cancelNotifications() {
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-            type: 'CANCEL_NOTIFICATIONS'
-        });
-    }
-}
+// Les rappels sont envoyes par le serveur (notifications push) : plus de programmation locale.
+function scheduleNotifications() {}
+function checkMissedNotification() {}
+function cancelNotifications() {}
 
 // ============ GESTION DE L'ASSISTANTE ============
 

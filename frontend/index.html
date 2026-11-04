@@ -663,7 +663,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <div class="font-medium text-sm">Rappels quotidiens</div>
-                        <div class="text-xs text-gray-500">Notification pour logger votre journee</div>
+                        <div class="text-xs text-gray-500">Un rappel à l'heure choisie si la journée n'est pas saisie, même appli fermée</div>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="notifications-enabled" class="sr-only peer">
@@ -673,7 +673,7 @@
 
                 <div id="notification-warning" class="hidden mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2 text-xs text-amber-800">
                     <svg class="inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10.3 3.9-8.2 14a2 2 0 0 0 1.7 3h16.4a2 2 0 0 0 1.7-3l-8.2-14a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg>
-                    <span>Notifications HTTPS requises sur mobile. Fonctionne sur PC (localhost).</span>
+                    <span>Sur iPhone, installez d'abord l'application sur l'écran d'accueil (Partager &gt; Sur l'écran d'accueil) pour recevoir les rappels.</span>
                 </div>
 
                 <div id="notifications-config" class="hidden mt-4 space-y-3">
@@ -693,7 +693,7 @@
                             <label class="weekday-item"><input type="checkbox" value="0" class="hidden peer"><span class="w-9 h-9 flex items-center justify-center text-xs font-medium border-2 rounded-full peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 cursor-pointer transition-colors">D</span></label>
                         </div>
                     </div>
-                    <button id="btn-test-notification" class="w-full py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Test notification</button>
+                    <button id="btn-test-notification" class="w-full py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Envoyer une notification de test</button>
                 </div>
             </div>
 
@@ -811,6 +811,7 @@
     <script src="js/api.js"></script>
     <script src="js/translations.js"></script>
     <script src="js/prefs.js"></script>
+    <script src="js/push.js"></script>
     <script src="js/app.js"></script>
     <script src="js/calendar.js"></script>
     <script src="js/history.js"></script>

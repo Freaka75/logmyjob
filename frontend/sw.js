@@ -1,7 +1,7 @@
 // Import Workbox from CDN
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/7.0.0/workbox-sw.js');
 
-const CACHE_VERSION = 'v45';
+const CACHE_VERSION = 'v46';
 const CACHE_NAME = `log-my-job-${CACHE_VERSION}`;
 
 // Configure Workbox
@@ -40,6 +40,7 @@ precacheAndRoute([
   { url: '/js/stats.js', revision: CACHE_VERSION },
   { url: '/js/offline-store.js', revision: CACHE_VERSION },
   { url: '/js/prefs.js', revision: CACHE_VERSION },
+  { url: '/js/push.js', revision: CACHE_VERSION },
   { url: '/manifest.json', revision: CACHE_VERSION }
 ]);
 
@@ -210,6 +211,7 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
+  event.waitUntil(unregisterLegacyPeriodicSync());
   event.waitUntil(
     Promise.all([
       self.clients.claim(),
@@ -348,43 +350,13 @@ self.addEventListener('message', async (event) => {
       await vacationsCache.put('/vacations-data', vacationsResponse);
       break;
 
+    // Rappels : desormais envoyes par le serveur (push). Anciens messages ignores,
+    // et nettoyage de la synchro periodique enregistree par les versions precedentes.
     case 'UPDATE_NOTIFICATION_SETTINGS':
     case 'SCHEDULE_NOTIFICATIONS':
-      const settingsCache = await caches.open(CACHE_NAME);
-      const settingsResponse = new Response(JSON.stringify(event.data.settings), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-      await settingsCache.put('/notification-settings', settingsResponse);
-
-      // Enregistrer pour periodic sync si disponible
-      if ('periodicSync' in self.registration) {
-        try {
-          await self.registration.periodicSync.register('daily-notification', {
-            minInterval: 60 * 60 * 1000 // 1 heure minimum
-          });
-          console.log('Periodic sync enregistré');
-        } catch (error) {
-          console.log('Periodic sync non disponible:', error);
-        }
-      }
-
-      // Vérifier immédiatement si une notification est due
-      await checkAndSendNotification();
-      break;
-
     case 'CANCEL_NOTIFICATIONS':
-      if ('periodicSync' in self.registration) {
-        try {
-          await self.registration.periodicSync.unregister('daily-notification');
-        } catch (error) {
-          console.log('Erreur unregister periodic sync:', error);
-        }
-      }
-      break;
-
     case 'CHECK_NOTIFICATION':
-      // Appelé quand l'app s'ouvre - vérifier si notification manquée
-      await checkAndSendNotification();
+      await unregisterLegacyPeriodicSync();
       break;
 
     case 'SKIP_WAITING':
@@ -424,10 +396,20 @@ async function checkAndSendNotification() {
   }
 }
 
-// Periodic Background Sync (Chrome Android principalement)
-self.addEventListener('periodicsync', async (event) => {
+async function unregisterLegacyPeriodicSync() {
+  if ('periodicSync' in self.registration) {
+    try {
+      await self.registration.periodicSync.unregister('daily-notification');
+    } catch (error) {
+      // pas d'enregistrement : rien a faire
+    }
+  }
+}
+
+// Ancienne synchro periodique : on la desinscrit au lieu d'envoyer un rappel local (doublon du push).
+self.addEventListener('periodicsync', (event) => {
   if (event.tag === 'daily-notification') {
-    event.waitUntil(checkAndSendNotification());
+    event.waitUntil(unregisterLegacyPeriodicSync());
   }
 });
 
@@ -470,10 +452,41 @@ async function sendDailyReminder() {
 }
 
 // Gestion des clics sur les notifications
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
+// Notification push envoyee par le serveur (Edge Function send-reminders)
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (error) {
+    data = { body: event.data ? event.data.text() : '' };
+  }
 
   event.waitUntil(
-    clients.openWindow('/')
+    self.registration.showNotification(data.title || 'Log My Job', {
+      body: data.body || 'Pense a logger ta journee client',
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      tag: data.tag || 'daily-reminder',
+      renotify: true,
+      data: { url: data.url || '/' }
+    })
   );
+});
+
+// Clic : reutilise une fenetre ouverte de l'application si possible
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || '/', self.location.origin).href;
+
+  event.waitUntil((async () => {
+    const windows = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of windows) {
+      if (new URL(client.url).origin === self.location.origin && 'focus' in client) {
+        await client.focus();
+        if ('navigate' in client) await client.navigate(target);
+        return;
+      }
+    }
+    await clients.openWindow(target);
+  })());
 });
