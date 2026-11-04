@@ -256,13 +256,13 @@ function renderStatsChart(stats) {
             datasets: [{
                 label: 'Jours',
                 data: data,
-                borderColor: '#2563eb',
-                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.12)',
                 fill: true,
                 tension: 0.3,
                 pointRadius: 6,
                 pointHoverRadius: 8,
-                pointBackgroundColor: '#2563eb',
+                pointBackgroundColor: '#6366f1',
                 pointBorderColor: '#fff',
                 pointBorderWidth: 2
             }]

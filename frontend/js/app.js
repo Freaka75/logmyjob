@@ -12,6 +12,27 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+// Icones (trait, 24x24) utilisees dans les listes generees en JS.
+const ICON_PATHS = {
+    edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    trash: '<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
+    copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'
+};
+
+function icon(name) {
+    return `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[name]}</svg>`;
+}
+
+// Libelle court de la duree, pour les pastilles.
+function formatDurationPill(duree) {
+    const map = {
+        journee_complete: '1 j',
+        demi_journee_matin: '½ matin',
+        demi_journee_aprem: '½ après-midi'
+    };
+    return map[duree] || duree;
+}
+
 // Etat global
 let currentPage = 'home';
 let allPresences = [];
@@ -577,15 +598,24 @@ function updateMonthWidget() {
     const clientBreakdown = document.getElementById('month-clients');
     clientBreakdown.innerHTML = '';
     Object.entries(clientStats).forEach(([client, days]) => {
-        const div = document.createElement('div');
-        div.className = 'client-stat';
-        div.textContent = `${client}: ${days.toFixed(1)}j`;
-        clientBreakdown.appendChild(div);
+        const chip = document.createElement('span');
+        chip.className = 'hero-chip';
+        const dot = document.createElement('span');
+        dot.className = 'hero-chip-dot';
+        dot.style.backgroundColor = getClientColor(client);
+        chip.append(dot, document.createTextNode(`${client} · ${days.toFixed(1)} j`));
+        clientBreakdown.appendChild(chip);
     });
 
     const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
                         'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
     document.getElementById('current-month-label').textContent = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+
+    const todayLabel = document.getElementById('today-label');
+    if (todayLabel) {
+        todayLabel.textContent = now.toLocaleDateString(currentLang === 'en' ? 'en-GB' : 'fr-FR',
+            { weekday: 'long', day: 'numeric', month: 'long' });
+    }
 }
 
 function updateRecentDays() {
@@ -595,7 +625,7 @@ function updateRecentDays() {
     const recent = allPresences.slice(0, 5);
 
     if (recent.length === 0) {
-        recentList.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Aucun jour enregistre</p>';
+        recentList.innerHTML = '<p class="empty-state">Aucun jour enregistré pour le moment</p>';
         return;
     }
 
@@ -610,17 +640,19 @@ function updateRecentDays() {
             deferredBadge = `<span class="deferred-badge">Facture ${formatBillingMonth(presence.billing_month)}</span>`;
         }
 
+        div.style.setProperty('--client-color', clientColor);
         div.innerHTML = `
-            <div class="day-color-bar" style="background-color: ${clientColor}"></div>
+            <div class="day-avatar">${escapeHtml(presence.client.charAt(0).toUpperCase())}</div>
             <div class="day-info">
-                <div class="day-date">${formatDate(presence.date)} ${deferredBadge}</div>
                 <div class="day-client">${escapeHtml(presence.client)}</div>
-                <div class="day-duration">${formatDuration(presence.duree)}</div>
+                <div class="day-date">${formatDate(presence.date)}</div>
                 ${presence.notes ? `<div class="day-notes">${escapeHtml(presence.notes)}</div>` : ''}
+                ${deferredBadge}
             </div>
+            <span class="day-pill">${formatDurationPill(presence.duree)}</span>
             <div class="day-actions">
-                <button class="btn-primary btn-small" onclick="editPresence('${presence.id}')">✏️</button>
-                <button class="btn-danger btn-small" onclick="deletePresence('${presence.id}')">🗑️</button>
+                <button class="icon-btn" onclick="editPresence('${presence.id}')" aria-label="Modifier">${icon('edit')}</button>
+                <button class="icon-btn icon-btn-danger" onclick="deletePresence('${presence.id}')" aria-label="Supprimer">${icon('trash')}</button>
             </div>
         `;
         recentList.appendChild(div);

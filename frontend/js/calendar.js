@@ -281,8 +281,8 @@ function showDayDetails(dateStr, presences) {
                 <span class="detail-badge vacation">Du ${formatDate(vacation.dateDebut)} au ${formatDate(vacation.dateFin)}</span>
             </div>
             <div class="detail-actions">
-                <button class="btn-primary btn-small" onclick="editVacation('${vacation.id}')">✏️</button>
-                <button class="btn-danger btn-small" onclick="deleteVacationFromCalendar('${vacation.id}')">🗑️</button>
+                <button class="icon-btn" onclick="editVacation('${vacation.id}')" aria-label="Modifier">${icon('edit')}</button>
+                <button class="icon-btn icon-btn-danger" onclick="deleteVacationFromCalendar('${vacation.id}')" aria-label="Supprimer">${icon('trash')}</button>
             </div>
         `;
         content.appendChild(vacationItem);
@@ -316,8 +316,8 @@ function showDayDetails(dateStr, presences) {
                 ${presence.notes ? `<div class="detail-notes">${escapeHtml(presence.notes)}</div>` : ''}
             </div>
             <div class="detail-actions">
-                <button class="btn-primary btn-small" onclick="editPresence('${presence.id}')">✏️</button>
-                <button class="btn-danger btn-small" onclick="deletePresence('${presence.id}')">🗑️</button>
+                <button class="icon-btn" onclick="editPresence('${presence.id}')" aria-label="Modifier">${icon('edit')}</button>
+                <button class="icon-btn icon-btn-danger" onclick="deletePresence('${presence.id}')" aria-label="Supprimer">${icon('trash')}</button>
             </div>
         `;
 

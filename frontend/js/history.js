@@ -271,7 +271,7 @@ function renderGroupedView(presences) {
         const monthHeader = document.createElement('div');
         monthHeader.className = 'month-header';
         monthHeader.innerHTML = `
-            <span class="month-label">📅 ${formatMonth(monthKey).toUpperCase()} (${monthTotal.toFixed(1)} jours)</span>
+            <span class="month-label">${formatMonth(monthKey)}</span><span class="month-total">${monthTotal.toFixed(1)} j</span>
             <span class="month-toggle">▼</span>
         `;
 
@@ -332,9 +332,9 @@ function createPresenceItem(presence) {
         </div>
         <div class="presence-notes">${escapeHtml(presence.notes || '-')}</div>
         <div class="presence-actions">
-            <button class="btn-icon" onclick="duplicatePresence('${presence.id}')" title="Dupliquer">📋</button>
-            <button class="btn-icon" onclick="editPresence('${presence.id}')" title="Éditer">✏️</button>
-            <button class="btn-icon" onclick="deletePresence('${presence.id}')" title="Supprimer">🗑️</button>
+            <button class="btn-icon" onclick="duplicatePresence('${presence.id}')" title="Dupliquer" aria-label="Dupliquer">${icon('copy')}</button>
+            <button class="btn-icon" onclick="editPresence('${presence.id}')" title="Modifier" aria-label="Modifier">${icon('edit')}</button>
+            <button class="btn-icon" onclick="deletePresence('${presence.id}')" title="Supprimer" aria-label="Supprimer">${icon('trash')}</button>
         </div>
     `;
 
@@ -392,9 +392,9 @@ function renderCompactView(presences) {
             <td>${getDurationIcon(presence.duree)} ${formatDurationShort(presence.duree)}</td>
             <td class="notes-cell">${escapeHtml(presence.notes || '-')}</td>
             <td class="actions-cell">
-                <button class="btn-icon btn-small" onclick="duplicatePresence('${presence.id}')">📋</button>
-                <button class="btn-icon btn-small" onclick="editPresence('${presence.id}')">✏️</button>
-                <button class="btn-icon btn-small" onclick="deletePresence('${presence.id}')">🗑️</button>
+                <button class="btn-icon btn-small" onclick="duplicatePresence('${presence.id}')" aria-label="Dupliquer">${icon('copy')}</button>
+                <button class="btn-icon btn-small" onclick="editPresence('${presence.id}')" aria-label="Modifier">${icon('edit')}</button>
+                <button class="btn-icon btn-small" onclick="deletePresence('${presence.id}')" aria-label="Supprimer">${icon('trash')}</button>
             </td>
         `;
         tbody.appendChild(row);
@@ -431,9 +431,9 @@ function renderTimelineView(presences) {
                 <div class="timeline-duration">${getDurationIcon(presence.duree)} ${formatDurationShort(presence.duree)}</div>
                 ${presence.notes ? `<div class="timeline-notes">${escapeHtml(presence.notes)}</div>` : ''}
                 <div class="timeline-actions">
-                    <button class="btn-icon btn-small" onclick="duplicatePresence('${presence.id}')">📋</button>
-                    <button class="btn-icon btn-small" onclick="editPresence('${presence.id}')">✏️</button>
-                    <button class="btn-icon btn-small" onclick="deletePresence('${presence.id}')">🗑️</button>
+                    <button class="btn-icon btn-small" onclick="duplicatePresence('${presence.id}')" aria-label="Dupliquer">${icon('copy')}</button>
+                    <button class="btn-icon btn-small" onclick="editPresence('${presence.id}')" aria-label="Modifier">${icon('edit')}</button>
+                    <button class="btn-icon btn-small" onclick="deletePresence('${presence.id}')" aria-label="Supprimer">${icon('trash')}</button>
                 </div>
             </div>
         `;

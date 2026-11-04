@@ -1,7 +1,7 @@
 // Import Workbox from CDN
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/7.0.0/workbox-sw.js');
 
-const CACHE_VERSION = 'v44';
+const CACHE_VERSION = 'v45';
 const CACHE_NAME = `log-my-job-${CACHE_VERSION}`;
 
 // Configure Workbox
@@ -25,7 +25,9 @@ precacheAndRoute([
   { url: '/index.html', revision: CACHE_VERSION },
   { url: '/auth.html', revision: CACHE_VERSION },
   { url: '/offline.html', revision: CACHE_VERSION },
+  { url: '/css/tailwind.css', revision: CACHE_VERSION },
   { url: '/css/style.css', revision: CACHE_VERSION },
+  { url: '/css/theme.css', revision: CACHE_VERSION },
   { url: '/js/config.js', revision: CACHE_VERSION },
   { url: '/js/supabase-client.js', revision: CACHE_VERSION },
   { url: '/js/auth.js', revision: CACHE_VERSION },
