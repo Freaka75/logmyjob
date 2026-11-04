@@ -1,7 +1,7 @@
 // Import Workbox from CDN
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/7.0.0/workbox-sw.js');
 
-const CACHE_VERSION = 'v42';
+const CACHE_VERSION = 'v43';
 const CACHE_NAME = `log-my-job-${CACHE_VERSION}`;
 
 // Configure Workbox

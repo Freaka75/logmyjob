@@ -1,5 +1,6 @@
 // État du calendrier
-let currentCalendarDate = new Date();
+// Toujours le 1er du mois : setMonth(+1) depuis un 31 sauterait un mois.
+let currentCalendarDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
 // Initialisation du calendrier
 function initCalendar() {
@@ -310,9 +311,9 @@ function showDayDetails(dateStr, presences) {
         item.innerHTML = `
             <div class="detail-color-bar" style="background-color: ${color}"></div>
             <div class="detail-content">
-                <div class="detail-client">${presence.client}</div>
+                <div class="detail-client">${escapeHtml(presence.client)}</div>
                 ${durationBadge}
-                ${presence.notes ? `<div class="detail-notes">${presence.notes}</div>` : ''}
+                ${presence.notes ? `<div class="detail-notes">${escapeHtml(presence.notes)}</div>` : ''}
             </div>
             <div class="detail-actions">
                 <button class="btn-primary btn-small" onclick="editPresence('${presence.id}')">✏️</button>

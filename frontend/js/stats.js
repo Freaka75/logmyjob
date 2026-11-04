@@ -328,7 +328,7 @@ function renderClientDistribution(stats) {
                 <div class="client-bar-header">
                     <span class="client-bar-name">
                         <span class="client-dot" style="background-color: ${color}"></span>
-                        ${client}
+                        ${escapeHtml(client)}
                     </span>
                     <span class="client-bar-value">${days.toFixed(1)}j (${percent.toFixed(0)}%)</span>
                 </div>

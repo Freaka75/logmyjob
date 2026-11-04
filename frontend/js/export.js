@@ -331,7 +331,7 @@ function renderExportPreview() {
         });
 
         html += `<tr>`;
-        html += `<td><span class="client-color-dot" style="background-color: ${color}"></span> ${client}</td>`;
+        html += `<td><span class="client-color-dot" style="background-color: ${color}"></span> ${escapeHtml(client)}</td>`;
         html += `<td class="days-cell">${data.total}j</td>`;
         html += `<td class="dates-cell">${datesHtml}</td>`;
         html += `</tr>`;

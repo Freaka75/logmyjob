@@ -1,161 +1,49 @@
 # Deploiement sur Coolify
 
-Guide de deploiement de Log My Job sur Coolify.
+L'application est deployee sur Coolify (projet **PWA**) depuis la branche `main` de
+`Freaka75/logmyjob`, et utilise la pile Supabase du meme projet (`https://supabase.mormagstudio.eu`).
 
-> **Note** : Cette application utilise localStorage pour stocker les donnees.
-> Chaque utilisateur a ses propres donnees dans son navigateur.
-> Pas de base de donnees serveur a configurer.
-
-## Pre-requis
-
-- Serveur Coolify operationnel
-- Acces au repository Git du projet
-- Domaine configure (optionnel, pour SSL)
-
-## Configuration Coolify
-
-### 1. Creer une nouvelle application
-
-1. Dans Coolify, cliquez sur **"New Resource"** > **"Application"**
-2. Selectionnez **"Docker"** comme type
-3. Connectez votre repository Git : `https://github.com/Freaka75/logmyjob.git`
-
-### 2. Configuration du build
+## Configuration de l'application Coolify
 
 | Parametre | Valeur |
-|-----------|--------|
+|---|---|
 | Build Pack | Dockerfile |
-| Dockerfile Location | `./Dockerfile` |
-| Docker Context | `.` |
+| Dockerfile Location | `/Dockerfile` |
+| Base Directory | `/` |
+| Port expose | `80` |
+| Domaine | `https://logmyjob.mormagstudio.eu` |
 
-### 3. Variables d'environnement
+Aucune variable d'environnement : la configuration Supabase est dans `frontend/js/config.js`.
+Le health check est defini dans le `Dockerfile` (`GET /api/health`).
 
-```env
-FLASK_ENV=production
-```
+## Mettre a jour
 
-> Pas besoin de DATABASE_PATH - les donnees sont en localStorage cote client.
+1. Incrementer `CACHE_VERSION` dans `frontend/sw.js`.
+2. Pousser sur `main`.
+3. Redeployer dans Coolify (ou automatiquement si le webhook est configure).
 
-### 4. Configuration reseau
-
-| Parametre | Valeur |
-|-----------|--------|
-| Port | `5000` |
-| Protocol | HTTP |
-
-### 5. Health Check
-
-Coolify detecte automatiquement le health check depuis le Dockerfile.
-Si besoin de configuration manuelle :
-
-| Parametre | Valeur |
-|-----------|--------|
-| Health Check Path | `/api/health` |
-| Health Check Port | `5000` |
-| Health Check Method | GET |
-
-### 6. Domaine et SSL
-
-1. Dans **"Domains"**, ajoutez votre domaine (ex: `logmyjob.example.com`)
-2. Activez **"Let's Encrypt"** pour SSL automatique
-3. Forcez HTTPS si souhaite
-
-> **Important** : HTTPS est requis pour l'installation PWA sur mobile.
-
-## Deploiement
-
-1. Cliquez sur **"Deploy"**
-2. Suivez les logs de build
-3. Verifiez que le health check passe au vert
-
-## Verification post-deploiement
+Verification :
 
 ```bash
-# Tester le health check
-curl https://votre-domaine.com/api/health
-# Reponse attendue: {"status":"ok","storage":"localStorage"}
-
-# Tester la page d'accueil
-curl -I https://votre-domaine.com/
-# Reponse attendue: HTTP/2 200
+curl https://logmyjob.mormagstudio.eu/api/health
+# {"status": "ok", "storage": "supabase"}
+curl -sI https://logmyjob.mormagstudio.eu/js/app.js | grep -i cache-control
+# Cache-Control: no-cache
 ```
 
-## Structure des fichiers deployes
+## Cache HTTP (`nginx.conf`)
 
-```
-/app/
-├── backend/
-│   ├── app.py          # Serveur Flask (fichiers statiques)
-│   └── requirements.txt
-└── frontend/
-    ├── index.html      # Application SPA
-    ├── css/
-    ├── js/
-    │   ├── storage.js  # Gestion localStorage
-    │   ├── app.js
-    │   └── ...
-    ├── icons/
-    ├── manifest.json
-    └── sw.js
-```
+- HTML / JS / CSS / JSON : `no-cache` (le navigateur revalide a chaque chargement, ETag).
+  Les noms de fichiers ne sont pas versionnes, un cache long empecherait les mises a jour.
+- `sw.js` : `no-store`.
+- Images et icones : 30 jours.
 
-## Sauvegarde des donnees
+## Base Supabase
 
-Les donnees sont stockees dans le navigateur de chaque utilisateur.
+Schema initial : `supabase/schema.sql` (a executer dans le SQL Editor de Supabase Studio).
 
-### Sauvegarde automatique (recommande)
-1. Ouvrir l'application
-2. Aller dans **Reglages** > **Sauvegarde**
-3. Activer **"Sauvegarde automatique"**
-4. Un fichier JSON est telecharge automatiquement apres chaque saisie
+## Depannage
 
-### Pour sauvegarder manuellement
-1. Ouvrir l'application
-2. Aller dans **Reglages** > **Sauvegarde**
-3. Cliquer sur **"Sauvegarder"**
-4. Un fichier JSON est telecharge
-
-### Pour restaurer
-1. Aller dans **Reglages** > **Sauvegarde**
-2. Cliquer sur **"Restaurer"**
-3. Selectionner le fichier JSON
-
-## Troubleshooting
-
-### L'application ne demarre pas
-1. Verifiez les logs dans Coolify
-2. Assurez-vous que le port 5000 est bien configure
-
-### Erreur 502 Bad Gateway
-- Le container n'est pas encore pret
-- Attendez que le health check passe au vert
-- Verifiez les logs pour des erreurs
-
-### PWA ne s'installe pas
-- Assurez-vous que HTTPS est active
-- Verifiez que le manifest.json est accessible
-- Verifiez la console du navigateur pour des erreurs
-
-### Donnees perdues
-- Les donnees sont dans le navigateur (localStorage)
-- Changer de navigateur = nouvelles donnees
-- Vider le cache = perte des donnees
-- **Solution** : Activer la sauvegarde automatique dans les Reglages
-
-## Performance
-
-Le Dockerfile est configure avec :
-- **2 workers Gunicorn** : adapte pour un usage leger
-- Pour plus de trafic, modifiez le Dockerfile :
-  ```dockerfile
-  CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", ...]
-  ```
-
-## Mise a jour
-
-1. Poussez vos modifications sur Git
-2. Coolify detecte automatiquement les changements (si webhook configure)
-3. Ou cliquez manuellement sur **"Deploy"**
-
-> Les donnees utilisateur ne sont pas affectees par les mises a jour
-> (elles sont dans le navigateur, pas sur le serveur).
+- **PWA ne s'installe pas** : HTTPS requis, verifier que `/manifest.json` est accessible.
+- **Ancienne version affichee sur mobile** : verifier que `CACHE_VERSION` a bien ete incremente,
+  puis fermer completement l'appli et la rouvrir.

@@ -324,13 +324,13 @@ function createPresenceItem(presence) {
         <div class="presence-date">${formattedDate} ${deferredBadge}</div>
         <div class="presence-client">
             <span class="client-color-dot" style="background-color: ${clientColor}"></span>
-            ${presence.client}
+            ${escapeHtml(presence.client)}
         </div>
         <div class="presence-duration">
             <span class="duration-icon">${durationIcon}</span>
             <span class="duration-text">${formatDurationShort(presence.duree)}</span>
         </div>
-        <div class="presence-notes">${presence.notes || '-'}</div>
+        <div class="presence-notes">${escapeHtml(presence.notes || '-')}</div>
         <div class="presence-actions">
             <button class="btn-icon" onclick="duplicatePresence('${presence.id}')" title="Dupliquer">📋</button>
             <button class="btn-icon" onclick="editPresence('${presence.id}')" title="Éditer">✏️</button>
@@ -388,9 +388,9 @@ function renderCompactView(presences) {
         row.innerHTML = `
             <td><input type="checkbox" data-id="${presence.id}" class="presence-select"></td>
             <td>${formatDate(presence.date)} ${deferredBadge}</td>
-            <td><span class="client-color-dot" style="background-color: ${clientColor}"></span> ${presence.client}</td>
+            <td><span class="client-color-dot" style="background-color: ${clientColor}"></span> ${escapeHtml(presence.client)}</td>
             <td>${getDurationIcon(presence.duree)} ${formatDurationShort(presence.duree)}</td>
-            <td class="notes-cell">${presence.notes || '-'}</td>
+            <td class="notes-cell">${escapeHtml(presence.notes || '-')}</td>
             <td class="actions-cell">
                 <button class="btn-icon btn-small" onclick="duplicatePresence('${presence.id}')">📋</button>
                 <button class="btn-icon btn-small" onclick="editPresence('${presence.id}')">✏️</button>
@@ -427,9 +427,9 @@ function renderTimelineView(presences) {
             <div class="timeline-date">${formatDate(presence.date)} ${deferredBadge}</div>
             <div class="timeline-dot" style="background-color: ${clientColor}; box-shadow: 0 0 0 2px ${clientColor}"></div>
             <div class="timeline-content">
-                <div class="timeline-client" style="color: ${clientColor}">${presence.client}</div>
+                <div class="timeline-client" style="color: ${clientColor}">${escapeHtml(presence.client)}</div>
                 <div class="timeline-duration">${getDurationIcon(presence.duree)} ${formatDurationShort(presence.duree)}</div>
-                ${presence.notes ? `<div class="timeline-notes">${presence.notes}</div>` : ''}
+                ${presence.notes ? `<div class="timeline-notes">${escapeHtml(presence.notes)}</div>` : ''}
                 <div class="timeline-actions">
                     <button class="btn-icon btn-small" onclick="duplicatePresence('${presence.id}')">📋</button>
                     <button class="btn-icon btn-small" onclick="editPresence('${presence.id}')">✏️</button>

@@ -1,6 +1,17 @@
 // ============ APPLICATION LOG MY JOB ============
 // Stockage via Supabase - Authentification requise
 
+// Echappe un texte saisi par l'utilisateur (client, notes) avant de l'inserer
+// dans du HTML via innerHTML / template string. Sert aussi dans les attributs.
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // Etat global
 let currentPage = 'home';
 let allPresences = [];
@@ -174,10 +185,10 @@ function renderClientColorsList() {
         item.innerHTML = `
             <div class="client-color-info">
                 <span class="client-color-badge" style="background-color: ${color}"></span>
-                <span class="client-color-name">${client}</span>
+                <span class="client-color-name">${escapeHtml(client)}</span>
             </div>
             <div class="client-color-picker-wrapper">
-                <input type="color" value="${color}" class="client-color-picker" data-client="${client}">
+                <input type="color" value="${color}" class="client-color-picker" data-client="${escapeHtml(client)}">
             </div>
         `;
 
@@ -305,6 +316,15 @@ function formatBillingMonth(monthStr) {
     return `${monthNames[parseInt(month) - 1]} ${year}`;
 }
 
+// Mois suivant une date 'YYYY-MM-DD', au format 'YYYY-MM'.
+// Calcul sur les chaines : new Date('2026-01-31').setMonth(+1) donnerait mars.
+function getNextMonth(dateStr) {
+    const [year, month] = dateStr.split('-').map(Number);
+    return month === 12
+        ? `${year + 1}-01`
+        : `${year}-${String(month + 1).padStart(2, '0')}`;
+}
+
 // Mettre a jour le label du mois de facturation
 function updateBillingMonthLabel() {
     const billNextMonthCheckbox = document.getElementById('bill-next-month');
@@ -314,10 +334,7 @@ function updateBillingMonthLabel() {
     if (!billNextMonthCheckbox || !billingMonthLabel) return;
 
     if (billNextMonthCheckbox.checked && dateInput.value) {
-        const dateObj = new Date(dateInput.value);
-        dateObj.setMonth(dateObj.getMonth() + 1);
-        const billingMonth = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
-        billingMonthLabel.textContent = formatBillingMonth(billingMonth);
+        billingMonthLabel.textContent = formatBillingMonth(getNextMonth(dateInput.value));
         billingMonthLabel.classList.remove('hidden');
     } else {
         billingMonthLabel.classList.add('hidden');
@@ -443,9 +460,7 @@ async function savePresence() {
     // Calculer le mois de facturation si "Facturer le mois prochain" est coche
     let billing_month = null;
     if (billNextMonth && date) {
-        const dateObj = new Date(date);
-        dateObj.setMonth(dateObj.getMonth() + 1);
-        billing_month = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+        billing_month = getNextMonth(date);
     }
 
     const data = { date, client, duree, notes, billing_month };
@@ -584,9 +599,9 @@ function updateRecentDays() {
             <div class="day-color-bar" style="background-color: ${clientColor}"></div>
             <div class="day-info">
                 <div class="day-date">${formatDate(presence.date)} ${deferredBadge}</div>
-                <div class="day-client">${presence.client}</div>
+                <div class="day-client">${escapeHtml(presence.client)}</div>
                 <div class="day-duration">${formatDuration(presence.duree)}</div>
-                ${presence.notes ? `<div class="day-notes">${presence.notes}</div>` : ''}
+                ${presence.notes ? `<div class="day-notes">${escapeHtml(presence.notes)}</div>` : ''}
             </div>
             <div class="day-actions">
                 <button class="btn-primary btn-small" onclick="editPresence('${presence.id}')">✏️</button>
