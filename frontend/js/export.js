@@ -266,7 +266,7 @@ function renderExportPreview() {
     const clients = Object.keys(summary).sort();
 
     if (clients.length === 0) {
-        preview.innerHTML = '<p class="empty-state">Aucune presence pour cette periode</p>';
+        preview.innerHTML = '<p class="empty-state">Aucune présence pour cette période</p>';
         totalDiv.innerHTML = '';
         return;
     }
@@ -341,7 +341,7 @@ function renderExportPreview() {
 
     // Ajouter la legende si des jours sont differes
     if (hasDeferred) {
-        html += '<p class="deferred-legend">* Jour reporte du mois precedent</p>';
+        html += '<p class="deferred-legend">* Jour reporté du mois précédent</p>';
     }
 
     preview.innerHTML = html;
@@ -352,8 +352,8 @@ function renderExportPreview() {
 // Générer le texte du récap pour copie/partage
 function generateRecapText() {
     const { start, end } = getExportDateRange();
-    const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
-                        'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
+    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
     // Determiner le label de periode
     let periodLabel;
@@ -386,13 +386,13 @@ function generateRecapText() {
             text += `\n  ${monthData.label} - ${monthData.total} jour${monthData.total > 1 ? 's' : ''}\n`;
 
             if (monthData.fullDays.length > 0) {
-                text += `    Journees completes : ${monthData.fullDays.sort((a,b) => a-b).join(', ')}\n`;
+                text += `    Journées complètes : ${monthData.fullDays.sort((a,b) => a-b).join(', ')}\n`;
             }
             if (monthData.halfDaysMorning.length > 0) {
-                text += `    Demi-journees (matin) : ${monthData.halfDaysMorning.sort((a,b) => a-b).join(', ')}\n`;
+                text += `    Demi-journées (matin) : ${monthData.halfDaysMorning.sort((a,b) => a-b).join(', ')}\n`;
             }
             if (monthData.halfDaysAfternoon.length > 0) {
-                text += `    Demi-journees (apres-midi) : ${monthData.halfDaysAfternoon.sort((a,b) => a-b).join(', ')}\n`;
+                text += `    Demi-journées (après-midi) : ${monthData.halfDaysAfternoon.sort((a,b) => a-b).join(', ')}\n`;
             }
         });
         text += '\n';
@@ -407,15 +407,15 @@ function generateRecapText() {
 // Générer le contenu de l'email
 function generateEmailContent() {
     const { start, end } = getExportDateRange();
-    const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
-                        'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
+    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
     // Determiner le label de periode
     let periodLabel;
     if (currentExportPeriod === 'this-month' || currentExportPeriod === 'last-month') {
         periodLabel = `${monthNames[start.getMonth()]} ${start.getFullYear()}`;
     } else if (currentExportPeriod === 'all') {
-        periodLabel = 'toutes les presences';
+        periodLabel = 'toutes les présences';
     } else {
         periodLabel = `${monthNames[start.getMonth()]} - ${monthNames[end.getMonth()]} ${end.getFullYear()}`;
     }
@@ -438,7 +438,7 @@ function generateEmailContent() {
         body += `${customMessage}\n\n`;
     }
 
-    body += `Voici le recapitulatif de mes presences client pour ${periodLabel} :\n\n`;
+    body += `Voici le récapitulatif de mes présences client pour ${periodLabel} :\n\n`;
 
     let grandTotal = 0;
 
@@ -455,24 +455,24 @@ function generateEmailContent() {
             body += `\n  ${monthData.label} - ${monthData.total} jour${monthData.total > 1 ? 's' : ''}\n`;
 
             if (monthData.fullDays.length > 0) {
-                body += `  - Journees completes : ${monthData.fullDays.sort((a,b) => a-b).join(', ')}\n`;
+                body += `  - Journées complètes : ${monthData.fullDays.sort((a,b) => a-b).join(', ')}\n`;
             }
             if (monthData.halfDaysMorning.length > 0) {
-                body += `  - Demi-journees (matin) : ${monthData.halfDaysMorning.sort((a,b) => a-b).join(', ')}\n`;
+                body += `  - Demi-journées (matin) : ${monthData.halfDaysMorning.sort((a,b) => a-b).join(', ')}\n`;
             }
             if (monthData.halfDaysAfternoon.length > 0) {
-                body += `  - Demi-journees (apres-midi) : ${monthData.halfDaysAfternoon.sort((a,b) => a-b).join(', ')}\n`;
+                body += `  - Demi-journées (après-midi) : ${monthData.halfDaysAfternoon.sort((a,b) => a-b).join(', ')}\n`;
             }
         });
         body += '\n';
     });
 
     body += `TOTAL : ${grandTotal} jour${grandTotal > 1 ? 's' : ''}\n\n`;
-    body += `Merci de proceder a la saisie dans Abby.\n\n`;
+    body += `Merci de procéder à la saisie dans Abby.\n\n`;
     body += `Cordialement`;
 
     return {
-        subject: `Recap presence client - ${periodLabel}`,
+        subject: `Récap présence client - ${periodLabel}`,
         body: body
     };
 }
@@ -548,14 +548,14 @@ function downloadCSV() {
     const monthNames = ['jan', 'fev', 'mar', 'avr', 'mai', 'juin',
                         'juil', 'aout', 'sept', 'oct', 'nov', 'dec'];
 
-    let csv = 'Client,Nombre de jours,Journees completes,Demi-journees matin,Demi-journees apres-midi\n';
+    let csv = 'Client,Nombre de jours,Journées complètes,Demi-journées matin,Demi-journées après-midi\n';
 
     clients.forEach(client => {
         const data = summary[client];
         csv += `"${client}",${data.total},"${data.fullDays.join(', ')}","${data.halfDaysMorning.join(', ')}","${data.halfDaysAfternoon.join(', ')}"\n`;
     });
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

@@ -1,11 +1,11 @@
 {
   "name": "Log My Job",
   "short_name": "Log My Job",
-  "description": "Tracker de presence client pour freelances",
+  "description": "Suivi de présence client pour freelances",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#3B82F6",
-  "theme_color": "#3B82F6",
+  "background_color": "#4f46e5",
+  "theme_color": "#f4f5fa",
   "orientation": "portrait-primary",
   "icons": [
     {

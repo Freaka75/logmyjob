@@ -264,7 +264,7 @@ function showDayDetails(dateStr, presences) {
     const content = document.getElementById('day-details-content');
 
     // Mettre à jour le titre
-    title.textContent = `Details - ${formatDate(dateStr)}`;
+    title.textContent = `Détails - ${formatDate(dateStr)}`;
 
     // Construire le contenu
     content.innerHTML = '';
@@ -301,11 +301,11 @@ function showDayDetails(dateStr, presences) {
 
         let durationBadge = '';
         if (isFullDay) {
-            durationBadge = '<span class="detail-badge full">Journee complete</span>';
+            durationBadge = '<span class="detail-badge full">Journée complète</span>';
         } else if (isMorning) {
             durationBadge = '<span class="detail-badge half">Matin (0.5j)</span>';
         } else if (isAfternoon) {
-            durationBadge = '<span class="detail-badge half">Apres-midi (0.5j)</span>';
+            durationBadge = '<span class="detail-badge half">Après-midi (0.5j)</span>';
         }
 
         item.innerHTML = `
@@ -355,9 +355,9 @@ function getVacationForDate(dateStr) {
 
 // Supprimer un conge depuis le calendrier
 function deleteVacationFromCalendar(id) {
-    if (!confirm('Supprimer cette periode de conges ?')) return;
+    if (!confirm('Supprimer cette période de congés ?')) return;
     deleteVacation(id, true); // true = skip confirmation (deja fait)
     document.getElementById('day-details-modal').style.display = 'none';
     renderCalendar();
-    showToast('Conges supprimes', 'success');
+    showToast('Congés supprimés', 'success');
 }

@@ -191,13 +191,13 @@ function getMonthsInPeriod(start, end) {
 // Formater le nom du mois
 function formatMonthName(monthKey) {
     const [year, month] = monthKey.split('-');
-    const monthNames = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aout', 'Sept', 'Oct', 'Nov', 'Dec'];
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Dec'];
     return `${monthNames[parseInt(month) - 1]} ${year}`;
 }
 
 function formatMonthNameFull(monthKey) {
     const [year, month] = monthKey.split('-');
-    const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
+    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
     return `${monthNames[parseInt(month) - 1]} ${year}`;
 }
 
@@ -391,8 +391,8 @@ function renderInsights(stats) {
         <div class="insight-card">
             <div class="insight-icon">⏱️</div>
             <div class="insight-text">
-                <strong>Demi-journees</strong>
-                <span>${stats.halfDaysCount} demi-journees (${stats.halfDaysRate.toFixed(0)}%)</span>
+                <strong>Demi-journées</strong>
+                <span>${stats.halfDaysCount} demi-journées (${stats.halfDaysRate.toFixed(0)}%)</span>
             </div>
         </div>
     `;
@@ -444,7 +444,7 @@ function exportStatsCSV() {
     csv += `\nTOTAL,${stats.totalDays.toFixed(1)},${stats.clientsCount}\n`;
     csv += `Moyenne/mois,${stats.avgPerMonth.toFixed(1)},-\n`;
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -452,7 +452,7 @@ function exportStatsCSV() {
     link.click();
     URL.revokeObjectURL(url);
 
-    showToast('CSV telecharge', 'success');
+    showToast('CSV téléchargé', 'success');
 }
 
 // Initialiser au chargement

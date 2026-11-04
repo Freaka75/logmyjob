@@ -4,7 +4,7 @@
 
 async function currentUserId() {
     const user = await auth.getCurrentUser();
-    if (!user) throw new Error('Utilisateur non connecte');
+    if (!user) throw new Error('Utilisateur non connecté');
     return user.id;
 }
 

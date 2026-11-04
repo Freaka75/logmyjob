@@ -499,7 +499,7 @@ function exportSelectedToCSV() {
         csv += `${p.date},${p.client},${formatDurationShort(p.duree)},"${(p.notes || '').replace(/"/g, '""')}"\n`;
     });
 
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -546,6 +546,6 @@ function formatDurationShort(duree) {
 function formatBillingMonthShort(monthStr) {
     if (!monthStr) return '';
     const [year, month] = monthStr.split('-');
-    const monthNames = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aout', 'Sept', 'Oct', 'Nov', 'Dec'];
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Dec'];
     return `${monthNames[parseInt(month) - 1]} ${year}`;
 }

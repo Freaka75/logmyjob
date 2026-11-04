@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const logoutBtn = document.getElementById('btn-logout');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
-            if (confirm('Voulez-vous vraiment vous deconnecter ?')) {
+            if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
                 await auth.signOut();
             }
         });
@@ -149,7 +149,7 @@ function initLanguageButtons() {
     if (langFr) {
         langFr.addEventListener('click', () => {
             setLanguage('fr');
-            showToast('Langue changee en Francais');
+            showToast('Langue changée en Français');
         });
     }
 
@@ -217,7 +217,7 @@ function renderClientColorsList() {
     container.innerHTML = '';
 
     if (allClients.length === 0) {
-        container.innerHTML = '<p class="empty-hint">Aucun client enregistre</p>';
+        container.innerHTML = '<p class="empty-hint">Aucun client enregistré</p>';
         return;
     }
 
@@ -354,8 +354,8 @@ function initQuickDateButtons() {
 function formatBillingMonth(monthStr) {
     if (!monthStr) return '';
     const [year, month] = monthStr.split('-');
-    const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
-                        'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
+    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
     return `${monthNames[parseInt(month) - 1]} ${year}`;
 }
 
@@ -422,7 +422,7 @@ function showForm(editData = null) {
     const billingMonthLabel = document.getElementById('billing-month-label');
 
     if (editData) {
-        formTitle.textContent = 'Modifier la presence';
+        formTitle.textContent = 'Modifier la présence';
         document.getElementById('edit-id').value = editData.id;
         document.getElementById('date').value = editData.date;
 
@@ -451,7 +451,7 @@ function showForm(editData = null) {
 
         currentEditId = editData.id;
     } else {
-        formTitle.textContent = 'Nouvelle presence';
+        formTitle.textContent = 'Nouvelle présence';
         form.reset();
         document.getElementById('date').value = getTodayDate();
         billNextMonthCheckbox.checked = false;
@@ -496,7 +496,7 @@ async function savePresence() {
     const billNextMonth = document.getElementById('bill-next-month').checked;
 
     if (!client) {
-        showToast('Veuillez selectionner ou saisir un client', 'error');
+        showToast('Veuillez sélectionner ou saisir un client', 'error');
         return;
     }
 
@@ -517,8 +517,8 @@ async function savePresence() {
         }
 
         if (result.success) {
-            const label = currentEditId ? 'Jour mis a jour' : 'Jour enregistre';
-            showToast(result.queued ? `${label} (hors ligne, sera synchronise)` : label,
+            const label = currentEditId ? 'Jour mis à jour' : 'Jour enregistré';
+            showToast(result.queued ? `${label} (hors ligne, sera synchronisé)` : label,
                 result.queued ? 'warning' : 'success');
             hideForm();
             await loadData();
@@ -534,7 +534,7 @@ async function deletePresence(id) {
 
     try {
         const result = await api.deleteDay(id);
-        showToast(result.queued ? 'Jour supprime (hors ligne, sera synchronise)' : 'Jour supprime',
+        showToast(result.queued ? 'Jour supprimé (hors ligne, sera synchronisé)' : 'Jour supprimé',
             result.queued ? 'warning' : 'success');
         await loadData();
     } catch (error) {
@@ -557,8 +557,8 @@ async function loadData() {
 
         updateUI();
     } catch (error) {
-        console.error('Erreur chargement donnees:', error);
-        showToast('Erreur de chargement des donnees', 'error');
+        console.error('Erreur chargement données:', error);
+        showToast('Erreur de chargement des données', 'error');
     }
 }
 
@@ -574,7 +574,7 @@ function updateUI() {
 
 function updateClientSelect() {
     const select = document.getElementById('client-select');
-    select.innerHTML = '<option value="">-- Selectionner --</option>';
+    select.innerHTML = '<option value="">-- Sélectionner --</option>';
 
     allClients.forEach(client => {
         const option = document.createElement('option');
@@ -617,8 +617,8 @@ function updateMonthWidget() {
         clientBreakdown.appendChild(chip);
     });
 
-    const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
-                        'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
+    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
     document.getElementById('current-month-label').textContent = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
 
     const todayLabel = document.getElementById('today-label');
@@ -731,18 +731,18 @@ function formatDate(dateStr) {
 
 function formatMonth(monthStr) {
     const [year, month] = monthStr.split('-');
-    const months = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
-                    'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
+    const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
     return `${months[parseInt(month) - 1]} ${year}`;
 }
 
 function formatDuration(duree) {
     const map = {
-        'journee_complete': 'Journee complete (1j)',
+        'journee_complete': 'Journée complète (1j)',
         'demi_journee_matin': 'Matin (0.5j)',
-        'demi_journee_aprem': 'Apres-midi (0.5j)',
-        '1.0': 'Journee complete (1j)',
-        '0.5': 'Demi-journee (0.5j)'
+        'demi_journee_aprem': 'Après-midi (0.5j)',
+        '1.0': 'Journée complète (1j)',
+        '0.5': 'Demi-journée (0.5j)'
     };
     return map[duree] || duree;
 }
@@ -797,7 +797,7 @@ async function loadVacations() {
     try {
         vacations = await api.getHolidays();
     } catch (error) {
-        console.error('Erreur chargement conges:', error);
+        console.error('Erreur chargement congés:', error);
         vacations = [];
     }
 }
@@ -808,13 +808,13 @@ function showVacationModal(vacation = null) {
     const form = document.getElementById('vacation-form');
 
     if (vacation) {
-        title.textContent = 'Modifier les conges';
+        title.textContent = 'Modifier les congés';
         document.getElementById('vacation-edit-id').value = vacation.id;
         document.getElementById('vacation-start').value = vacation.dateDebut;
         document.getElementById('vacation-end').value = vacation.dateFin;
         document.getElementById('vacation-type').value = vacation.type;
     } else {
-        title.textContent = 'Ajouter des conges';
+        title.textContent = 'Ajouter des congés';
         form.reset();
         document.getElementById('vacation-edit-id').value = '';
     }
@@ -834,7 +834,7 @@ async function saveVacation() {
     const type = document.getElementById('vacation-type').value;
 
     if (new Date(dateFin) < new Date(dateDebut)) {
-        showToast('La date de fin doit etre >= a la date de debut', 'error');
+        showToast('La date de fin doit être >= à la date de début', 'error');
         return;
     }
 
@@ -850,7 +850,7 @@ async function saveVacation() {
     });
 
     if (hasOverlap) {
-        showToast('Cette periode chevauche une periode existante', 'error');
+        showToast('Cette période chevauche une période existante', 'error');
         return;
     }
 
@@ -864,19 +864,19 @@ async function saveVacation() {
         await loadVacations();
         checkCurrentVacation();
         hideVacationModal();
-        showToast(editId ? 'Conges modifies' : 'Conges ajoutes', 'success');
+        showToast(editId ? 'Congés modifiés' : 'Congés ajoutés', 'success');
 
         if (currentPage === 'calendar') {
             renderCalendar();
         }
     } catch (error) {
-        console.error('Erreur sauvegarde conges:', error);
+        console.error('Erreur sauvegarde congés:', error);
         showToast('Erreur lors de la sauvegarde', 'error');
     }
 }
 
 async function deleteVacation(id, skipConfirm = false) {
-    if (!skipConfirm && !confirm('Supprimer cette periode de conges ?')) return;
+    if (!skipConfirm && !confirm('Supprimer cette période de congés ?')) return;
 
     try {
         await api.deleteHoliday(id);
@@ -887,9 +887,9 @@ async function deleteVacation(id, skipConfirm = false) {
             renderCalendar();
         }
 
-        showToast('Conges supprimes', 'success');
+        showToast('Congés supprimés', 'success');
     } catch (error) {
-        console.error('Erreur suppression conges:', error);
+        console.error('Erreur suppression congés:', error);
         showToast('Erreur lors de la suppression', 'error');
     }
 }
@@ -905,7 +905,7 @@ function editVacation(id) {
 
 function getVacationType(type) {
     const types = {
-        'conges': 'Conges',
+        'conges': 'Congés',
         'rtt': 'RTT',
         'ferie': 'Ferie',
         'autre': 'Autre'
@@ -940,7 +940,7 @@ function checkCurrentVacation() {
     if (activeVacation) {
         const icon = getVacationIcon(activeVacation.type);
         const typeLabel = getVacationType(activeVacation.type);
-        bannerText.textContent = `${icon} Vous etes en ${typeLabel.toLowerCase()} jusqu'au ${formatDate(activeVacation.dateFin)}`;
+        bannerText.textContent = `${icon} Vous êtes en ${typeLabel.toLowerCase()} jusqu'au ${formatDate(activeVacation.dateFin)}`;
         banner.style.display = 'flex';
     } else {
         banner.style.display = 'none';
@@ -973,7 +973,7 @@ function initNotifications() {
                 notificationSettings.enabled = true;
                 config.style.display = 'block';
                 saveNotificationSettings();
-                showToast('Rappels actives sur cet appareil', 'success');
+                showToast('Rappels activés sur cet appareil', 'success');
             } catch (error) {
                 console.error('Activation des rappels:', error);
                 toggle.checked = false;
@@ -1006,7 +1006,7 @@ function initNotifications() {
 
 async function requestNotificationPermission() {
     if (!('Notification' in window)) {
-        showToast('Les notifications ne sont pas supportees', 'error');
+        showToast('Les notifications ne sont pas supportées', 'error');
         return 'denied';
     }
 
@@ -1063,10 +1063,10 @@ async function sendTestNotification() {
     try {
         await Push.subscribe(); // garantit que cet appareil est bien abonne
         const result = await Push.sendTest();
-        showToast(`Notification envoyee a ${result.sent} appareil(s)`, 'success');
+        showToast(`Notification envoyée à ${result.sent} appareil(s)`, 'success');
     } catch (error) {
         console.error('Test notification:', error);
-        showToast(error.message || 'Echec du test', 'error');
+        showToast(error.message || 'Échec du test', 'error');
     } finally {
         if (btn) btn.disabled = false;
     }
@@ -1104,7 +1104,7 @@ function saveAssistantSettings() {
 
     localStorage.setItem('assistantSettings', JSON.stringify(assistantSettings));
     Prefs.touch();
-    showToast('Parametres assistante sauvegardes', 'success');
+    showToast('Paramètres assistante sauvegardés', 'success');
 }
 
 // ============ SAUVEGARDE ET RESTAURATION ============
@@ -1139,9 +1139,9 @@ function initBackup() {
             localStorage.setItem('autoBackupEnabled', autoBackupToggle.checked);
             Prefs.touch();
             if (autoBackupToggle.checked) {
-                showToast('Sauvegarde auto activee', 'success');
+                showToast('Sauvegarde auto activée', 'success');
             } else {
-                showToast('Sauvegarde auto desactivee', 'info');
+                showToast('Sauvegarde auto désactivée', 'info');
             }
         });
     }
@@ -1166,7 +1166,7 @@ async function backupData() {
 
         const daysCount = backup.data.days ? backup.data.days.length : 0;
         status.className = 'backup-status success';
-        status.textContent = `Sauvegarde reussie! ${daysCount} presences exportees.`;
+        status.textContent = `Sauvegarde réussie! ${daysCount} présences exportées.`;
 
     } catch (error) {
         console.error('Erreur sauvegarde:', error);
@@ -1202,7 +1202,7 @@ async function handleRestoreFile(event) {
                 presenceCount = backup.data.presences.length;
             }
 
-            const confirmMsg = `Restaurer ${presenceCount} presences?\n\nAttention: Les donnees actuelles seront remplacees.`;
+            const confirmMsg = `Restaurer ${presenceCount} présences?\n\nAttention: Les données actuelles seront remplacées.`;
 
             if (!confirm(confirmMsg)) {
                 status.textContent = '';
@@ -1216,7 +1216,7 @@ async function handleRestoreFile(event) {
             await api.importData(backup, true);
 
             status.className = 'backup-status success';
-            status.textContent = `Restauration reussie!`;
+            status.textContent = `Restauration réussie!`;
 
             await loadData();
             await loadVacations();
@@ -1224,7 +1224,7 @@ async function handleRestoreFile(event) {
             loadClientColors();
             renderClientColorsList();
 
-            showToast('Donnees restaurees avec succes', 'success');
+            showToast('Données restaurées avec succès', 'success');
 
         } catch (error) {
             console.error('Erreur restauration:', error);
@@ -1241,8 +1241,8 @@ async function handleRestoreFile(event) {
 async function resetAllData() {
     const confirm1 = confirm(
         'ATTENTION\n\n' +
-        'Vous etes sur le point de supprimer TOUTES vos donnees.\n\n' +
-        'Avez-vous effectue une SAUVEGARDE ?'
+        'Vous êtes sur le point de supprimer TOUTES vos données.\n\n' +
+        'Avez-vous effectué une SAUVEGARDE ?'
     );
 
     if (!confirm1) return;
@@ -1250,7 +1250,7 @@ async function resetAllData() {
     const confirm2 = confirm(
         'CONFIRMATION FINALE\n\n' +
         'Cette action est IRREVERSIBLE.\n\n' +
-        'Etes-vous VRAIMENT sur de vouloir tout supprimer ?'
+        'Êtes-vous VRAIMENT sûr de vouloir tout supprimer ?'
     );
 
     if (!confirm2) return;
@@ -1290,12 +1290,12 @@ async function resetAllData() {
         const config = document.getElementById('notifications-config');
         if (config) config.style.display = 'none';
 
-        showToast('Reinitialisation terminee.', 'success');
+        showToast('Réinitialisation terminée.', 'success');
         navigateTo('home');
 
     } catch (error) {
-        console.error('Erreur reinitialisation:', error);
-        showToast('Erreur lors de la reinitialisation', 'error');
+        console.error('Erreur réinitialisation:', error);
+        showToast('Erreur lors de la réinitialisation', 'error');
     }
 }
 
@@ -1377,7 +1377,7 @@ function applyTheme(theme) {
 
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-        metaThemeColor.setAttribute('content', isDark ? '#1e293b' : '#2563eb');
+        metaThemeColor.setAttribute('content', isDark ? '#0b0d14' : '#f4f5fa');
     }
 
     updateChartTheme(isDark);
@@ -1448,7 +1448,7 @@ function initPWAInstall() {
         hideInstallBanner();
         hideIOSBanner();
         updateSettingsInstallSection();
-        showToast('Application installee avec succes!', 'success');
+        showToast('Application installée avec succès!', 'success');
     });
 
     initInstallBannerButtons();
@@ -1543,7 +1543,7 @@ async function triggerInstallPrompt() {
     if (outcome === 'accepted') {
         console.log('Installation acceptee');
     } else {
-        console.log('Installation refusee');
+        console.log('Installation refusée');
         localStorage.setItem('pwa-install-dismissed', new Date().toISOString());
     }
 
@@ -1701,7 +1701,7 @@ function handleOfflineStatus() {
     isOnline = false;
     document.body.classList.add('offline');
     updateOfflineBanner();
-    showToast('Mode hors ligne : vos saisies seront synchronisees au retour du reseau', 'warning');
+    showToast('Mode hors ligne : vos saisies seront synchronisées au retour du réseau', 'warning');
 }
 
 function updateOfflineBanner() {
@@ -1736,7 +1736,7 @@ function updatePendingSyncCount() {
 async function handleForceSyncClick() {
     const syncBtn = document.getElementById('btn-force-sync');
     if (!isOnline) {
-        showToast('Vous devez etre connecte pour synchroniser', 'error');
+        showToast('Vous devez être connecté pour synchroniser', 'error');
         return;
     }
 
@@ -1768,9 +1768,9 @@ async function handleSyncComplete(event) {
     const { sent, dropped } = event.detail;
 
     if (dropped > 0) {
-        showToast(`${dropped} modification(s) refusee(s) par le serveur`, 'error');
+        showToast(`${dropped} modification(s) refusée(s) par le serveur`, 'error');
     } else if (sent > 0) {
-        showToast(`${sent} modification(s) synchronisee(s)`, 'success');
+        showToast(`${sent} modification(s) synchronisée(s)`, 'success');
     }
 
     updateOfflineBanner();

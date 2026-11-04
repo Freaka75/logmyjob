@@ -154,7 +154,7 @@ const OfflineStore = (() => {
                 } catch (error) {
                     if (isNetworkError(error) || isAuthError(error)) break;
                     // Refus definitif du serveur : on retire l'operation pour ne pas bloquer la file.
-                    console.error('OfflineStore: operation refusee par le serveur', op, error);
+                    console.error('OfflineStore: operation refusée par le serveur', op, error);
                     dropped++;
                 }
                 setQueue(getQueue().filter(q => q.qid !== op.qid));

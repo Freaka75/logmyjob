@@ -35,7 +35,7 @@ const Push = (() => {
 
     async function save(subscription) {
         const user = await auth.getCurrentUser();
-        if (!user) throw new Error('Utilisateur non connecte');
+        if (!user) throw new Error('Utilisateur non connecté');
         const data = subscription.toJSON();
 
         const { error } = await getSupabase()
@@ -55,15 +55,15 @@ const Push = (() => {
     // A appeler suite a un geste de l'utilisateur (demande de permission).
     async function subscribe() {
         if (needsInstallFirst()) {
-            throw new Error("Sur iPhone, installez d'abord l'application sur l'ecran d'accueil (Partager > Sur l'ecran d'accueil)");
+            throw new Error("Sur iPhone, installez d'abord l'application sur l'écran d'accueil (Partager > Sur l'écran d'accueil)");
         }
         if (!isSupported()) {
-            throw new Error('Notifications push non supportees par ce navigateur');
+            throw new Error('Notifications push non supportées par ce navigateur');
         }
 
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
-            throw new Error('Permission de notifications refusee');
+            throw new Error('Permission de notifications refusée');
         }
 
         const registration = await getRegistration();
@@ -106,7 +106,7 @@ const Push = (() => {
             }
             await save(subscription);
         } catch (error) {
-            console.error('Push: mise a jour de l\'abonnement impossible', error);
+            console.error('Push: mise à jour de l\'abonnement impossible', error);
         }
     }
 
