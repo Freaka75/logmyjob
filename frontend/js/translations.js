@@ -442,6 +442,7 @@ function setLanguage(lang) {
     if (translations[lang]) {
         currentLang = lang;
         localStorage.setItem('app-language', lang);
+        if (window.Prefs) Prefs.touch();
         applyTranslations();
         document.documentElement.lang = lang;
 

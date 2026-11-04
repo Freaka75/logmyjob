@@ -289,7 +289,7 @@ function renderStatsChart(stats) {
                         stepSize: 5
                     },
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
+                        color: Chart.defaults.borderColor
                     }
                 },
                 x: {

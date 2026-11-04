@@ -62,6 +62,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         userEmailEl.textContent = user.email;
     }
 
+    // Cache hors ligne propre a cet utilisateur, puis reglages synchronises
+    // (avant les init* qui lisent les reglages dans localStorage).
+    OfflineStore.setUser(user.id);
+    if (await Prefs.pull()) {
+        const syncedLang = localStorage.getItem('app-language');
+        if (syncedLang && translations[syncedLang] && syncedLang !== currentLang) {
+            currentLang = syncedLang;
+            document.documentElement.lang = syncedLang;
+            applyTranslations();
+        }
+    }
+
     // Initialiser le bouton de deconnexion
     const logoutBtn = document.getElementById('btn-logout');
     if (logoutBtn) {
@@ -137,6 +149,7 @@ function loadClientColors() {
 
 function saveClientColors() {
     localStorage.setItem('clientColors', JSON.stringify(clientColors));
+    Prefs.touch();
 }
 
 function getClientColor(clientName) {
@@ -148,9 +161,8 @@ function getClientColor(clientName) {
     const colorIndex = clientIndex >= 0 ? clientIndex % DEFAULT_COLORS.length : 0;
     const color = DEFAULT_COLORS[colorIndex];
 
-    clientColors[clientName] = color;
-    saveClientColors();
-
+    // Couleur par defaut : non enregistree (deterministe), pour ne pas ecraser
+    // les couleurs synchronisees depuis un autre appareil.
     return color;
 }
 
@@ -474,7 +486,9 @@ async function savePresence() {
         }
 
         if (result.success) {
-            showToast(currentEditId ? 'Jour mis a jour' : 'Jour enregistre', 'success');
+            const label = currentEditId ? 'Jour mis a jour' : 'Jour enregistre';
+            showToast(result.queued ? `${label} (hors ligne, sera synchronise)` : label,
+                result.queued ? 'warning' : 'success');
             hideForm();
             await loadData();
         }
@@ -488,8 +502,9 @@ async function deletePresence(id) {
     if (!confirm('Supprimer ce jour ?')) return;
 
     try {
-        await api.deleteDay(id);
-        showToast('Jour supprime', 'success');
+        const result = await api.deleteDay(id);
+        showToast(result.queued ? 'Jour supprime (hors ligne, sera synchronise)' : 'Jour supprime',
+            result.queued ? 'warning' : 'success');
         await loadData();
     } catch (error) {
         console.error('Erreur suppression:', error);
@@ -992,6 +1007,7 @@ function loadNotificationSettings() {
 
 function saveNotificationSettings() {
     localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
+    Prefs.touch();
 
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({
@@ -1094,6 +1110,7 @@ function saveAssistantSettings() {
     assistantSettings.message = document.getElementById('assistant-message').value;
 
     localStorage.setItem('assistantSettings', JSON.stringify(assistantSettings));
+    Prefs.touch();
     showToast('Parametres assistante sauvegardes', 'success');
 }
 
@@ -1127,6 +1144,7 @@ function initBackup() {
 
         autoBackupToggle.addEventListener('change', () => {
             localStorage.setItem('autoBackupEnabled', autoBackupToggle.checked);
+            Prefs.touch();
             if (autoBackupToggle.checked) {
                 showToast('Sauvegarde auto activee', 'success');
             } else {
@@ -1336,6 +1354,7 @@ function initDarkMode() {
 function setTheme(theme) {
     currentTheme = theme;
     localStorage.setItem('theme', theme);
+    Prefs.touch();
     applyTheme(theme);
     updateThemeUI();
 }
@@ -1397,31 +1416,16 @@ function updateThemeUI() {
 }
 
 function updateChartTheme(isDark) {
-    if (typeof Chart !== 'undefined' && Chart.instances) {
-        const textColor = isDark ? '#f1f5f9' : '#1e293b';
-        const gridColor = isDark ? '#475569' : '#e2e8f0';
+    if (typeof Chart === 'undefined') return;
 
-        Object.values(Chart.instances).forEach(chart => {
-            if (chart.options.scales) {
-                if (chart.options.scales.x) {
-                    chart.options.scales.x.ticks = chart.options.scales.x.ticks || {};
-                    chart.options.scales.x.ticks.color = textColor;
-                    chart.options.scales.x.grid = chart.options.scales.x.grid || {};
-                    chart.options.scales.x.grid.color = gridColor;
-                }
-                if (chart.options.scales.y) {
-                    chart.options.scales.y.ticks = chart.options.scales.y.ticks || {};
-                    chart.options.scales.y.ticks.color = textColor;
-                    chart.options.scales.y.grid = chart.options.scales.y.grid || {};
-                    chart.options.scales.y.grid.color = gridColor;
-                }
-            }
-            if (chart.options.plugins && chart.options.plugins.legend) {
-                chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
-                chart.options.plugins.legend.labels.color = textColor;
-            }
-            chart.update();
-        });
+    // Couleurs par defaut lues par les graphiques au moment de leur creation.
+    Chart.defaults.color = isDark ? '#cbd5e1' : '#475569';
+    Chart.defaults.borderColor = isDark ? 'rgba(148, 163, 184, 0.15)' : 'rgba(15, 23, 42, 0.06)';
+
+    // Les options d'un graphique Chart.js v4 sont des proxys : les reaffecter
+    // (ex. ticks = ticks || {}) provoquait une recursion infinie. On recree le graphique.
+    if (typeof statsChart !== 'undefined' && statsChart) {
+        renderStats();
     }
 }
 
@@ -1666,227 +1670,117 @@ function getAllVacations() {
 }
 
 // ============ GESTION DU MODE HORS LIGNE ============
+// Les donnees et la file d'attente sont gerees par OfflineStore (offline-store.js).
 
 let isOnline = navigator.onLine;
 
 function initOfflineMode() {
-    // Setup online/offline event listeners
     window.addEventListener('online', handleOnlineStatus);
     window.addEventListener('offline', handleOfflineStatus);
+    window.addEventListener('offline-store-change', updatePendingSyncCount);
+    window.addEventListener('offline-store-synced', handleSyncComplete);
 
-    // Listen for offline sync events
-    window.addEventListener('offline-sync-complete', handleSyncComplete);
-    window.addEventListener('show-toast', handleShowToast);
-    window.addEventListener('background-sync-status', handleBackgroundSyncStatus);
-
-    // Setup sync button
     const syncBtn = document.getElementById('btn-force-sync');
     if (syncBtn) {
         syncBtn.addEventListener('click', handleForceSyncClick);
     }
 
-    // Setup service worker message listener
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
-    }
-
-    // Initial state check
+    if (!isOnline) document.body.classList.add('offline');
     updateOfflineBanner();
-    updatePendingSyncCount();
 }
 
-function handleOnlineStatus() {
+async function handleOnlineStatus() {
     isOnline = true;
     document.body.classList.remove('offline');
     updateOfflineBanner();
 
-    // Trigger sync if we have OfflineSync module
-    if (typeof OfflineSync !== 'undefined') {
-        setTimeout(async () => {
-            const count = await OfflineSync.getQueueCount();
-            if (count > 0) {
-                showToast('Synchronisation des modifications...', 'info');
-                OfflineSync.processQueue();
-            }
-        }, 1000);
+    // OfflineStore.read() vide la file avant de relire les donnees du serveur.
+    try {
+        await loadData();
+        await loadVacations();
+        showToast('Connexion retablie', 'success');
+    } catch (error) {
+        console.error('Erreur au retour en ligne:', error);
     }
-
-    // Refresh data when back online
-    setTimeout(async () => {
-        try {
-            await loadData();
-            await loadVacations();
-            showToast('Connexion retablie', 'success');
-        } catch (error) {
-            console.error('Error refreshing data:', error);
-        }
-    }, 2000);
 }
 
 function handleOfflineStatus() {
     isOnline = false;
     document.body.classList.add('offline');
     updateOfflineBanner();
-    showToast('Mode hors ligne active', 'warning');
+    showToast('Mode hors ligne : vos saisies seront synchronisees au retour du reseau', 'warning');
 }
 
 function updateOfflineBanner() {
     const banner = document.getElementById('offline-banner');
     const syncBtn = document.getElementById('btn-force-sync');
+    const pending = OfflineStore.pendingCount();
 
-    if (!banner) return;
-
-    if (!isOnline) {
-        banner.classList.remove('hidden');
-
-        // Show sync button for iOS/Safari that need manual sync
-        if (typeof OfflineSync !== 'undefined' && OfflineSync.needsIndexedDBFallback()) {
-            if (syncBtn) syncBtn.classList.remove('hidden');
-        }
-    } else {
-        banner.classList.add('hidden');
+    if (banner) {
+        // Bandeau visible hors ligne, ou s'il reste des modifications a envoyer.
+        banner.classList.toggle('hidden', isOnline && pending === 0);
     }
-
+    if (syncBtn) {
+        syncBtn.classList.toggle('hidden', !isOnline || pending === 0);
+    }
     updatePendingSyncCount();
 }
 
-async function updatePendingSyncCount() {
+function updatePendingSyncCount() {
     const countBadge = document.getElementById('pending-sync-count');
     if (!countBadge) return;
 
-    if (typeof OfflineSync !== 'undefined') {
-        try {
-            const count = await OfflineSync.getQueueCount();
-            if (count > 0) {
-                countBadge.textContent = count;
-                countBadge.classList.remove('hidden');
-            } else {
-                countBadge.classList.add('hidden');
-            }
-        } catch (error) {
-            countBadge.classList.add('hidden');
-        }
-    } else {
-        countBadge.classList.add('hidden');
+    const count = OfflineStore.pendingCount();
+    countBadge.textContent = count;
+    countBadge.classList.toggle('hidden', count === 0);
+
+    const banner = document.getElementById('offline-banner');
+    if (banner && isOnline) {
+        banner.classList.toggle('hidden', count === 0);
     }
 }
 
 async function handleForceSyncClick() {
     const syncBtn = document.getElementById('btn-force-sync');
-    if (!syncBtn || !isOnline) {
+    if (!isOnline) {
         showToast('Vous devez etre connecte pour synchroniser', 'error');
         return;
     }
 
-    syncBtn.classList.add('syncing');
-    syncBtn.disabled = true;
+    if (syncBtn) {
+        syncBtn.classList.add('syncing');
+        syncBtn.disabled = true;
+    }
 
     try {
-        if (typeof OfflineSync !== 'undefined') {
-            const results = await OfflineSync.processQueue();
-
-            if (results.processed > 0) {
-                showToast(`${results.processed} modification(s) synchronisee(s)`, 'success');
-                await loadData(); // Refresh data
-            } else if (results.failed > 0) {
-                showToast(`${results.failed} modification(s) echouee(s)`, 'error');
-            } else {
-                showToast('Aucune modification en attente', 'info');
-            }
-        }
-
-        // Also trigger service worker sync if available
-        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-            navigator.serviceWorker.controller.postMessage({
-                type: 'FORCE_SYNC'
-            });
+        const result = await OfflineStore.flush();
+        if (result.pending > 0) {
+            showToast(`${result.pending} modification(s) encore en attente`, 'warning');
+        } else if (result.sent === 0 && result.dropped === 0) {
+            showToast('Aucune modification en attente', 'info');
         }
     } catch (error) {
-        console.error('Sync error:', error);
+        console.error('Erreur de synchronisation:', error);
         showToast('Erreur lors de la synchronisation', 'error');
     } finally {
-        syncBtn.classList.remove('syncing');
-        syncBtn.disabled = false;
-        updatePendingSyncCount();
-    }
-}
-
-function handleSyncComplete(event) {
-    const { processed, failed } = event.detail;
-
-    if (processed > 0 && failed === 0) {
-        showToast(`${processed} modification(s) synchronisee(s)`, 'success');
-    } else if (failed > 0) {
-        showToast(`Synchronisation: ${processed} reussies, ${failed} echouees`, 'warning');
-    }
-
-    updatePendingSyncCount();
-
-    // Refresh UI after sync
-    loadData();
-}
-
-function handleShowToast(event) {
-    const { message, type } = event.detail;
-    showToast(message, type || 'info');
-}
-
-function handleBackgroundSyncStatus(event) {
-    const { supported } = event.detail;
-
-    // If background sync is not supported, show the sync button
-    if (!supported) {
-        const syncBtn = document.getElementById('btn-force-sync');
-        if (syncBtn && !isOnline) {
-            syncBtn.classList.remove('hidden');
+        if (syncBtn) {
+            syncBtn.classList.remove('syncing');
+            syncBtn.disabled = false;
         }
-
-        // Add iOS-specific info
-        const banner = document.getElementById('offline-banner');
-        if (banner && !banner.querySelector('.ios-sync-info')) {
-            const info = document.createElement('p');
-            info.className = 'ios-sync-info';
-            info.innerHTML = '<strong>iOS/Safari:</strong> Synchronisation automatique non supportee. Utilisez le bouton Synchroniser quand vous etes connecte.';
-            banner.appendChild(info);
-        }
+        updateOfflineBanner();
     }
 }
 
-function handleServiceWorkerMessage(event) {
-    const { type, url, method } = event.data;
+async function handleSyncComplete(event) {
+    const { sent, dropped } = event.detail;
 
-    switch (type) {
-        case 'SYNC_COMPLETE':
-            showToast('Modification synchronisee', 'success');
-            updatePendingSyncCount();
-            loadData(); // Refresh data
-            break;
-
-        case 'REQUEST_QUEUED':
-            showToast('Modification mise en file d\'attente', 'info');
-            updatePendingSyncCount();
-            break;
-
-        case 'QUEUE_TO_INDEXEDDB':
-            // This is handled by offline-sync.js
-            break;
-
-        case 'SYNC_STATUS':
-            window.dispatchEvent(new CustomEvent('background-sync-status', {
-                detail: { supported: event.data.supported }
-            }));
-            break;
+    if (dropped > 0) {
+        showToast(`${dropped} modification(s) refusee(s) par le serveur`, 'error');
+    } else if (sent > 0) {
+        showToast(`${sent} modification(s) synchronisee(s)`, 'success');
     }
-}
 
-// Check background sync support on init
-function checkBackgroundSyncSupport() {
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-            type: 'GET_SYNC_STATUS'
-        });
-    }
+    updateOfflineBanner();
+    await loadData();
+    await loadVacations();
 }
-
-// Call this after SW is ready
-setTimeout(checkBackgroundSyncSupport, 3000);

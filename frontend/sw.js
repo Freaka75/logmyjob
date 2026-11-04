@@ -1,7 +1,7 @@
 // Import Workbox from CDN
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/7.0.0/workbox-sw.js');
 
-const CACHE_VERSION = 'v43';
+const CACHE_VERSION = 'v44';
 const CACHE_NAME = `log-my-job-${CACHE_VERSION}`;
 
 // Configure Workbox
@@ -36,7 +36,8 @@ precacheAndRoute([
   { url: '/js/history.js', revision: CACHE_VERSION },
   { url: '/js/export.js', revision: CACHE_VERSION },
   { url: '/js/stats.js', revision: CACHE_VERSION },
-  { url: '/js/offline-sync.js', revision: CACHE_VERSION },
+  { url: '/js/offline-store.js', revision: CACHE_VERSION },
+  { url: '/js/prefs.js', revision: CACHE_VERSION },
   { url: '/manifest.json', revision: CACHE_VERSION }
 ]);
 

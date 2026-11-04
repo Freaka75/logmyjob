@@ -46,6 +46,7 @@ CREATE TABLE user_settings (
     dark_mode BOOLEAN DEFAULT false,
     language TEXT DEFAULT 'fr',
     auto_backup BOOLEAN DEFAULT true,
+    preferences JSONB NOT NULL DEFAULT '{}'::jsonb, -- reglages synchronises (voir frontend/js/prefs.js)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -98,3 +99,8 @@ CREATE TRIGGER update_days_updated_at BEFORE UPDATE ON days
 
 CREATE TRIGGER update_user_settings_updated_at BEFORE UPDATE ON user_settings
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ===== Migrations =====
+-- 2026-11-04 : reglages synchronises entre appareils (a executer en tant que supabase_admin)
+-- ALTER TABLE public.user_settings ADD COLUMN IF NOT EXISTS preferences JSONB NOT NULL DEFAULT '{}'::jsonb;
+-- NOTIFY pgrst, 'reload schema';

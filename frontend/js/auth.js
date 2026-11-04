@@ -52,11 +52,11 @@ const auth = {
         window.location.href = '/auth.html';
     },
 
-    // Recuperer l'utilisateur actuel
+    // Recuperer l'utilisateur actuel depuis la session locale (fonctionne hors ligne).
+    // Le serveur verifie de toute facon le jeton a chaque requete (RLS).
     async getCurrentUser() {
-        const supabase = getSupabase();
-        const { data: { user } } = await supabase.auth.getUser();
-        return user;
+        const session = await this.getSession();
+        return session?.user ?? null;
     },
 
     // Recuperer la session actuelle
